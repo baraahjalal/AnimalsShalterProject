@@ -86,6 +86,9 @@
     <Compile Include="Product.cs" />
     <Compile Include="Customer.cs" />
     <Compile Include="Adoption.cs" />
+    <Compile Include="Donation.cs" />
+    <Compile Include="Sale.cs" />
+    <Compile Include="SaleDetail.cs" />
     <Compile Include="RecordDonationForm.cs">
       <SubType>Form</SubType>
     </Compile>

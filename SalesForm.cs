@@ -2,18 +2,25 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace AnimalsShalterProject
 {
     public partial class SalesForm : Form
     {
-        // --- STYLING CONSTANTS ---
         private readonly Color BorderMuted = ColorTranslator.FromHtml("#D3D8D5");
         private readonly Color BrandGreen = ColorTranslator.FromHtml("#457357");
         private readonly Color SidebarFooterBg = ColorTranslator.FromHtml("#F1EDE4");
         private readonly Color TableHeaderBg = ColorTranslator.FromHtml("#457357");
         private readonly Color IconColor = ColorTranslator.FromHtml("#8A938D");
         
+        public static EventHandler SalesChanged;
+        public static List<Sale> SharedSales = new List<Sale>();
+        private BindingSource bsSales = new BindingSource();
+        private List<SaleDetail> _cartItems = new List<SaleDetail>();
+        private int nextTempDetailId = 1;
+
         public SalesForm()
         {
             InitializeComponent();
@@ -21,112 +28,274 @@ namespace AnimalsShalterProject
 
         private void SalesForm_Load(object sender, EventArgs e)
         {
-            // Populate Dummy Data in DGV
-            dgvSales.Rows.Add("#S-1001", "Ahmed Ali", "Oct 24, 2023", "2 items", "165.00");
-            dgvSales.Rows.Add("#S-1002", "Sarah Jenkins", "Oct 24, 2023", "1 item", "45.00");
-            dgvSales.Rows.Add("#S-1003", "Omar Hassan", "Oct 23, 2023", "3 items", "120.00");
-            dgvSales.Rows.Add("#S-1004", "Fatima Zohra", "Oct 23, 2023", "1 item", "25.00");
-            dgvSales.Rows.Add("#S-1005", "David Smith", "Oct 22, 2023", "4 items", "210.00");
+            // E1.4 Seed Data
+            if (SharedSales.Count == 0)
+            {
+                var c1 = CustomersForm.SharedCustomers.FirstOrDefault() ?? new Customer { ID = 1, Name = "Ahmed Ali" };
+                var p1 = ProductsForm.SharedProducts.FirstOrDefault(p => p.Price == 120) ?? ProductsForm.SharedProducts.FirstOrDefault() ?? new Product { ID = 1, Name = "Premium Dog Food", Price = 120 };
+                var p2 = ProductsForm.SharedProducts.FirstOrDefault(p => p.Price == 45) ?? ProductsForm.SharedProducts.Skip(1).FirstOrDefault() ?? new Product { ID = 2, Name = "Cat Litter", Price = 45 };
 
-            // Populate Combos
-            cmbCustomer.Items.Add("Ahmed Ali");
-            cmbCustomer.Items.Add("Sarah Jenkins");
-            cmbCustomer.SelectedIndex = 0;
+                var sampleSale = new Sale { ID = GetNextSaleId(), CustomerID = c1.ID, CustomerName = c1.Name, SaleDate = DateTime.Today };
+                sampleSale.Details.Add(new SaleDetail { ID = 1, SaleID = sampleSale.ID, ProductID = p1.ID, ProductName = p1.Name, Quantity = 1, UnitPrice = p1.Price });
+                sampleSale.Details.Add(new SaleDetail { ID = 2, SaleID = sampleSale.ID, ProductID = p2.ID, ProductName = p2.Name, Quantity = 1, UnitPrice = p2.Price });
+                sampleSale.TotalAmount = sampleSale.Details.Sum(d => d.Subtotal);
+                SharedSales.Add(sampleSale);
+            }
 
-            cmbProduct.Items.Add("Premium Dog Food 5kg - 120 LYD");
-            cmbProduct.Items.Add("Cat Litter 10kg - 45 LYD");
-            cmbProduct.Items.Add("Dog Leash - 25 LYD");
-            cmbProduct.SelectedIndex = 0;
+            SetupSalesGrid();
 
-            // Add dummy cart items
-            AddCartItem("Premium Dog Food", "1", "120.00");
-            AddCartItem("Cat Litter 10kg", "1", "45.00");
-            UpdateTotals();
+            // E2.1 Customer Dropdown
+            cmbCustomer.DataSource = CustomersForm.SharedCustomers.ToList();
+            cmbCustomer.DisplayMember = "Name";
+            cmbCustomer.ValueMember = "ID";
+            if (cmbCustomer.Items.Count > 0) cmbCustomer.SelectedIndex = 0;
 
-            // Wire up ADD button
+            // E2.2 Product Dropdown
+            cmbProduct.DataSource = ProductsForm.SharedProducts.Where(p => p.Stock > 0).ToList();
+            cmbProduct.DisplayMember = "Name";
+            cmbProduct.ValueMember = "ID";
+            if (cmbProduct.Items.Count > 0) cmbProduct.SelectedIndex = 0;
+
             btnAddItem.Click += BtnAddItem_Click;
+            btnCompleteSale.Click += BtnCompleteSale_Click;
+        }
+
+        private void SetupSalesGrid()
+        {
+            dgvSales.AutoGenerateColumns = false;
+            dgvSales.Columns["ColSaleId"].DataPropertyName = "ID";
+            dgvSales.Columns["ColCustomer"].DataPropertyName = "CustomerName";
+            dgvSales.Columns["ColDate"].DataPropertyName = "SaleDate";
+            dgvSales.Columns["ColTotal"].DataPropertyName = "TotalAmount";
+            // For ColItems, we need custom formatting since it's a list. We'll handle it in CellFormatting.
+            dgvSales.CellFormatting += DgvSales_CellFormatting;
+            RefreshSalesGrid();
+        }
+
+        private void RefreshSalesGrid()
+        {
+            bsSales.DataSource = SharedSales.ToList();
+            dgvSales.DataSource = bsSales;
+            
+            decimal todayTotal = SharedSales.Where(s => s.SaleDate.Date == DateTime.Today).Sum(s => s.TotalAmount);
+            lblTotalAmount.Text = $"{todayTotal:N2} LYD";
+        }
+
+        private void DgvSales_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.Value == null) return;
+            var colName = dgvSales.Columns[e.ColumnIndex].Name;
+
+            if (colName == "ColSaleId" && e.Value is int id)
+            {
+                e.Value = $"#S-{id}";
+                e.FormattingApplied = true;
+            }
+            else if (colName == "ColDate" && e.Value is DateTime dt)
+            {
+                e.Value = dt.ToString("MMM dd, yyyy");
+                e.FormattingApplied = true;
+            }
+            else if (colName == "ColTotal" && e.Value is decimal total)
+            {
+                e.Value = $"{total:N2}";
+                e.FormattingApplied = true;
+            }
+            else if (colName == "ColItems")
+            {
+                var sale = (Sale)dgvSales.Rows[e.RowIndex].DataBoundItem;
+                int itemsCount = sale.Details.Sum(d => d.Quantity);
+                e.Value = itemsCount == 1 ? "1 item" : $"{itemsCount} items";
+                e.FormattingApplied = true;
+            }
+        }
+
+        private int GetNextSaleId()
+        {
+            return SharedSales.Count == 0 ? 1001 : SharedSales.Max(s => s.ID) + 1;
+        }
+
+        private int GetNextDetailId()
+        {
+            int max = 0;
+            foreach (var s in SharedSales)
+                foreach (var d in s.Details)
+                    if (d.ID > max) max = d.ID;
+            return max + 1;
+        }
+
+        // --- CART ITEM RENDERER ---
+        private void RenderCart()
+        {
+            flpCartItems.Controls.Clear();
+            foreach (var item in _cartItems)
+            {
+                Panel pnlItem = new Panel();
+                pnlItem.Width = flpCartItems.Width - 10;
+                pnlItem.Height = 50;
+                pnlItem.Margin = new Padding(0, 0, 0, 10);
+                pnlItem.BackColor = Color.White;
+                pnlItem.Paint += InputPanel_PaintRoundedBorder;
+
+                Label lblName = new Label();
+                lblName.Text = $"{item.Quantity}x {item.ProductName}";
+                lblName.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                lblName.ForeColor = ColorTranslator.FromHtml("#2A332E");
+                lblName.Location = new Point(15, 15);
+                lblName.AutoSize = true;
+
+                Label lblPrice = new Label();
+                lblPrice.Text = item.Subtotal.ToString("0.00") + " LYD";
+                lblPrice.Font = new Font("Segoe UI", 9F);
+                lblPrice.ForeColor = BrandGreen;
+                lblPrice.Location = new Point(pnlItem.Width - 80, 15);
+                lblPrice.AutoSize = true;
+
+                Label lblDelete = new Label();
+                lblDelete.Text = "✕";
+                lblDelete.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+                lblDelete.ForeColor = Color.FromArgb(200, 200, 200);
+                lblDelete.Cursor = Cursors.Hand;
+                lblDelete.Location = new Point(pnlItem.Width - 25, 14);
+                lblDelete.AutoSize = true;
+                lblDelete.Click += (s, e) => {
+                    _cartItems.Remove(item);
+                    RenderCart();
+                    UpdateTotals();
+                };
+                lblDelete.MouseEnter += (s, e) => lblDelete.ForeColor = Color.Red;
+                lblDelete.MouseLeave += (s, e) => lblDelete.ForeColor = Color.FromArgb(200, 200, 200);
+
+                pnlItem.Controls.Add(lblName);
+                pnlItem.Controls.Add(lblPrice);
+                pnlItem.Controls.Add(lblDelete);
+
+                flpCartItems.Controls.Add(pnlItem);
+            }
         }
 
         private void BtnAddItem_Click(object sender, EventArgs e)
         {
-            if (cmbProduct.SelectedIndex >= 0)
+            if (cmbProduct.SelectedItem is Product selectedProduct)
             {
-                string[] parts = cmbProduct.SelectedItem.ToString().Split('-');
-                if (parts.Length == 2)
+                // Verify stock
+                int qtyToAdd = 1; // Always add 1 at a time as there's no qty input
+                var existingItem = _cartItems.FirstOrDefault(d => d.ProductID == selectedProduct.ID);
+                int currentCartQty = existingItem != null ? existingItem.Quantity : 0;
+                
+                // Live lookup from SharedProducts
+                var liveProduct = ProductsForm.SharedProducts.FirstOrDefault(p => p.ID == selectedProduct.ID);
+                if (liveProduct == null) return;
+
+                if (currentCartQty + qtyToAdd > liveProduct.Stock)
                 {
-                    string name = parts[0].Trim();
-                    string price = parts[1].Trim().Replace("LYD", "").Trim();
-                    AddCartItem(name, "1", price);
-                    UpdateTotals();
+                    MessageBox.Show($"Not enough stock. Only {liveProduct.Stock} units available.", "Stock Limit Exceeded", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
                 }
-            }
-        }
 
-        // --- CART ITEM RENDERER ---
-        private void AddCartItem(string name, string qty, string price)
-        {
-            Panel pnlItem = new Panel();
-            pnlItem.Width = flpCartItems.Width - 10;
-            pnlItem.Height = 50;
-            pnlItem.Margin = new Padding(0, 0, 0, 10);
-            pnlItem.BackColor = Color.White;
-            pnlItem.Tag = price; // Store price for calc
-            
-            // Apply rounded border logic
-            pnlItem.Paint += InputPanel_PaintRoundedBorder;
+                if (existingItem != null)
+                {
+                    existingItem.Quantity += qtyToAdd;
+                }
+                else
+                {
+                    _cartItems.Add(new SaleDetail
+                    {
+                        ID = nextTempDetailId++,
+                        ProductID = liveProduct.ID,
+                        ProductName = liveProduct.Name,
+                        Quantity = qtyToAdd,
+                        UnitPrice = liveProduct.Price
+                    });
+                }
 
-            Label lblName = new Label();
-            lblName.Text = name;
-            lblName.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            lblName.ForeColor = ColorTranslator.FromHtml("#2A332E");
-            lblName.Location = new Point(15, 15);
-            lblName.AutoSize = true;
-
-            Label lblPrice = new Label();
-            lblPrice.Text = price + " LYD";
-            lblPrice.Font = new Font("Segoe UI", 9F);
-            lblPrice.ForeColor = BrandGreen;
-            lblPrice.Location = new Point(pnlItem.Width - 80, 15);
-            lblPrice.AutoSize = true;
-
-            // Delete icon
-            Label lblDelete = new Label();
-            lblDelete.Text = "✕";
-            lblDelete.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            lblDelete.ForeColor = Color.FromArgb(200, 200, 200);
-            lblDelete.Cursor = Cursors.Hand;
-            lblDelete.Location = new Point(pnlItem.Width - 25, 14);
-            lblDelete.AutoSize = true;
-            lblDelete.Click += (s, e) => {
-                flpCartItems.Controls.Remove(pnlItem);
-                pnlItem.Dispose();
+                RenderCart();
                 UpdateTotals();
-            };
-            lblDelete.MouseEnter += (s, e) => lblDelete.ForeColor = Color.Red;
-            lblDelete.MouseLeave += (s, e) => lblDelete.ForeColor = Color.FromArgb(200, 200, 200);
-
-            pnlItem.Controls.Add(lblName);
-            pnlItem.Controls.Add(lblPrice);
-            pnlItem.Controls.Add(lblDelete);
-
-            flpCartItems.Controls.Add(pnlItem);
+            }
         }
 
         private void UpdateTotals()
         {
-            decimal subtotal = 0;
-            foreach (Control c in flpCartItems.Controls)
-            {
-                if (c is Panel p && p.Tag != null)
-                {
-                    if (decimal.TryParse(p.Tag.ToString(), out decimal price))
-                        subtotal += price;
-                }
-            }
+            decimal subtotal = _cartItems.Sum(i => i.Subtotal);
 
             lblSubtotalValue.Text = subtotal.ToString("0.00") + " LYD";
             lblTaxValue.Text = "0.00 LYD";
             lblTotalValue.Text = subtotal.ToString("0.00") + " LYD";
+        }
+
+        private void BtnCompleteSale_Click(object sender, EventArgs e)
+        {
+            if (cmbCustomer.SelectedItem == null)
+            {
+                MessageBox.Show("Please select a customer.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (_cartItems.Count == 0)
+            {
+                MessageBox.Show("Cart is empty.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Re-verify stock for all items
+            foreach (var item in _cartItems)
+            {
+                var liveProduct = ProductsForm.SharedProducts.FirstOrDefault(p => p.ID == item.ProductID);
+                if (liveProduct == null || item.Quantity > liveProduct.Stock)
+                {
+                    MessageBox.Show($"Not enough stock for '{item.ProductName}'. Available: {liveProduct?.Stock ?? 0}", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+
+            var selectedCustomer = (Customer)cmbCustomer.SelectedItem;
+            
+            Sale newSale = new Sale
+            {
+                ID = GetNextSaleId(),
+                CustomerID = selectedCustomer.ID,
+                CustomerName = selectedCustomer.Name,
+                SaleDate = DateTime.Today,
+                TotalAmount = _cartItems.Sum(i => i.Subtotal)
+            };
+
+            foreach (var item in _cartItems)
+            {
+                var detail = new SaleDetail
+                {
+                    ID = GetNextDetailId(),
+                    SaleID = newSale.ID,
+                    ProductID = item.ProductID,
+                    ProductName = item.ProductName,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice // Snapshot
+                };
+                newSale.Details.Add(detail);
+
+                // Decrement stock
+                var liveProduct = ProductsForm.SharedProducts.FirstOrDefault(p => p.ID == item.ProductID);
+                if (liveProduct != null)
+                {
+                    liveProduct.Stock -= item.Quantity;
+                }
+            }
+
+            SharedSales.Add(newSale);
+            SalesChanged?.Invoke(this, EventArgs.Empty);
+            ProductsForm.ProductsChanged?.Invoke(this, EventArgs.Empty);
+
+            MessageBox.Show($"Sale confirmed! Total: {newSale.TotalAmount:0.00} LYD", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            // Clear Cart
+            _cartItems.Clear();
+            RenderCart();
+            UpdateTotals();
+            RefreshSalesGrid();
+
+            // Refresh Product Dropdown to reflect updated stock
+            var currentProdId = cmbProduct.SelectedValue;
+            cmbProduct.DataSource = ProductsForm.SharedProducts.Where(p => p.Stock > 0).ToList();
+            if (currentProdId != null) cmbProduct.SelectedValue = currentProdId;
         }
 
         // --- ROUNDED CORNERS FOR PANELS & BUTTONS ---
