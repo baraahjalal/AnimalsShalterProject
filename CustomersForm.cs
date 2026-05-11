@@ -1,137 +1,290 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace AnimalsShalterProject
 {
     public partial class CustomersForm : Form
     {
-        private static readonly Color ColorGreen = Color.FromArgb(69, 115, 87);
-        private static readonly Color ColorCard = Color.White;
-        private static readonly Color ColorAccent = Color.FromArgb(235, 230, 225);
+        // --- STATIC SHARED LIST (mirrors AnimalsForm.SharedAnimals pattern) ---
+        public static EventHandler CustomersChanged;
+        public static List<Customer> SharedCustomers = new List<Customer>();
+        private BindingSource bsCustomers = new BindingSource();
+
+        // --- STYLING CONSTANTS (copied exactly from AnimalsForm) ---
+        private readonly Color ColorPrimaryGreen  = ColorTranslator.FromHtml("#457357");
+        private readonly Color ColorTextPrimary   = ColorTranslator.FromHtml("#2A332E");
+        private readonly Color ColorTextSecondary = ColorTranslator.FromHtml("#8A938D");
 
         public CustomersForm()
         {
             InitializeComponent();
-            SetupUI();
-            LoadSampleCustomers();
+
+            // Wire events
+            this.btnAddCustomer.Click += BtnAddCustomer_Click;
+            this.txtSearch.TextChanged += TxtSearch_TextChanged;
+            this.dgvCustomers.CellMouseClick += DgvCustomers_CellMouseClick;
+            this.dgvCustomers.CellPainting   += DgvCustomers_CellPainting;
+
+            this.Load += CustomersForm_Load;
         }
 
-        private void SetupUI()
+        // -------------------- Load --------------------
+        private void CustomersForm_Load(object sender, EventArgs e)
         {
-            // تطبيق الحواف الدائرية للعناصر الأساسية
-            this.Load += (s, e) => {
-                ApplyRoundedCorners(pnlSearch, 15);
-                ApplyRoundedCorners(btnAddCustomer, 10);
-            };
+            if (SharedCustomers.Count == 0)
+            {
+                SharedCustomers.Add(new Customer { ID = 1, Name = "Ahmed Ali",      Phone = "091-234-5678", Email = "ahmed.ali@email.com",      JoinDate = new DateTime(2022, 3, 15) });
+                SharedCustomers.Add(new Customer { ID = 2, Name = "Sara Mohamed",   Phone = "092-876-5432", Email = "sara.m@email.com",          JoinDate = new DateTime(2023, 1, 8)  });
+                SharedCustomers.Add(new Customer { ID = 3, Name = "Khalid Omar",    Phone = "091-998-1122", Email = "khalid.omar@email.com",     JoinDate = new DateTime(2021, 11, 20) });
+                SharedCustomers.Add(new Customer { ID = 4, Name = "Fatima Hassan",  Phone = "093-445-6677", Email = "fatima.h@email.com",        JoinDate = new DateTime(2023, 6, 1)  });
+                SharedCustomers.Add(new Customer { ID = 5, Name = "Yusuf Ibrahim",  Phone = "091-332-9988", Email = "yusuf.ibrahim@email.com",   JoinDate = new DateTime(2022, 9, 14) });
+            }
+
+            SetupGrid();
+            RefreshGrid();
         }
 
-        private void LoadSampleCustomers()
+        // -------------------- SetupGrid (called once) --------------------
+        private void SetupGrid()
         {
-            flpCustomerList.Controls.Clear();
-            
-            // إضافة عينة من العملاء بناءً على الصورة المرفقة
-            AddCustomerCard("Eleanor Vance", "CUST-8829", "(555) 234-9012", "Mar 2022", 2);
-            AddCustomerCard("Marcus Thorne", "CUST-7741", "(555) 876-5432", "Jan 2023", 1);
-            AddCustomerCard("Sylvia Rossi", "CUST-6510", "(555) 998-1122", "Nov 2021", 0);
+            dgvCustomers.AutoGenerateColumns = false;
+
+            dgvCustomers.Columns.Clear();
+
+            // Hidden ID column
+            var colId = new DataGridViewTextBoxColumn
+            {
+                Name = "ColId", HeaderText = "ID",
+                DataPropertyName = "ID", Visible = false
+            };
+            dgvCustomers.Columns.Add(colId);
+
+            var colName = new DataGridViewTextBoxColumn
+            {
+                Name = "ColName", HeaderText = "Customer Name",
+                DataPropertyName = "Name"
+            };
+            dgvCustomers.Columns.Add(colName);
+
+            var colPhone = new DataGridViewTextBoxColumn
+            {
+                Name = "ColPhone", HeaderText = "Phone",
+                DataPropertyName = "Phone"
+            };
+            dgvCustomers.Columns.Add(colPhone);
+
+            var colEmail = new DataGridViewTextBoxColumn
+            {
+                Name = "ColEmail", HeaderText = "Email",
+                DataPropertyName = "Email"
+            };
+            dgvCustomers.Columns.Add(colEmail);
+
+            var colJoin = new DataGridViewTextBoxColumn
+            {
+                Name = "ColJoinDate", HeaderText = "Join Date",
+                DataPropertyName = "JoinDate"
+            };
+            dgvCustomers.Columns.Add(colJoin);
+
+            var colActions = new DataGridViewTextBoxColumn
+            {
+                Name = "ColActions", HeaderText = "Actions"
+            };
+            dgvCustomers.Columns.Add(colActions);
+
+            dgvCustomers.DataSource = bsCustomers;
+            dgvCustomers.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         }
 
-        private void AddCustomerCard(string name, string id, string phone, string joinDate, int adoptions)
+        // -------------------- RefreshGrid --------------------
+        private void RefreshGrid()
         {
-            // لوحة الكارت الرئيسية
-            Panel card = new Panel {
-                Size = new Size(flpCustomerList.Width - 50, 100),
-                BackColor = ColorCard,
-                Margin = new Padding(0, 0, 0, 15),
-                Padding = new Padding(15)
-            };
-            card.Paint += (s, e) => ApplyRoundedCorners(card, 15);
+            string search = txtSearch.Text?.Trim();
+            IEnumerable<Customer> q = SharedCustomers;
 
-            // صورة العميل (دائرية)
-            PictureBox pb = new PictureBox {
-                Size = new Size(60, 60),
-                Location = new Point(15, 20),
-                BackColor = ColorAccent,
-                SizeMode = PictureBoxSizeMode.StretchImage
-            };
-            pb.Paint += (s, e) => {
-                using (GraphicsPath path = new GraphicsPath()) {
-                    path.AddEllipse(0, 0, pb.Width - 1, pb.Height - 1);
-                    pb.Region = new Region(path);
+            if (!string.IsNullOrWhiteSpace(search) && search != "Search customers...")
+            {
+                q = q.Where(c =>
+                    (c.Name  ?? "").IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (c.Phone ?? "").IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+
+            bsCustomers.DataSource = q.ToList();
+            dgvCustomers.Refresh();
+        }
+
+        // -------------------- GetNextCustomerId --------------------
+        private int GetNextCustomerId()
+        {
+            return SharedCustomers.Count == 0 ? 1 : SharedCustomers.Max(c => c.ID) + 1;
+        }
+
+        // -------------------- Search --------------------
+        private void TxtSearch_TextChanged(object sender, EventArgs e)
+        {
+            RefreshGrid();
+        }
+
+        // -------------------- Add Customer --------------------
+        private void BtnAddCustomer_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (var dlg = new NewCustomerForm())
+                {
+                    dlg.StartPosition = FormStartPosition.CenterParent;
+                    dlg.SetTitle("Add New Customer");
+
+                    if (dlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        var c = new Customer
+                        {
+                            ID       = GetNextCustomerId(),
+                            Name     = dlg.CustomerName,
+                            Phone    = dlg.CustomerPhone,
+                            Email    = dlg.CustomerEmail,
+                            JoinDate = DateTime.Today
+                        };
+                        SharedCustomers.Add(c);
+                        RefreshGrid();
+                        CustomersChanged?.Invoke(this, EventArgs.Empty);
+                    }
                 }
-            };
-
-            // المعلومات النصية
-            Label lblName = new Label {
-                Text = name,
-                Font = new Font("Segoe UI Bold", 12F),
-                Location = new Point(85, 20),
-                AutoSize = true
-            };
-            Label lblDetails = new Label {
-                Text = $"ID: {id}  •  Joined {joinDate}",
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = Color.Gray,
-                Location = new Point(85, 45),
-                AutoSize = true
-            };
-
-            // رقم الهاتف
-            Label lblPhoneTitle = new Label {
-                Text = "PHONE",
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DarkGray,
-                Location = new Point(400, 20),
-                AutoSize = true
-            };
-            Label lblPhoneValue = new Label {
-                Text = phone,
-                Font = new Font("Segoe UI Semibold", 10F),
-                Location = new Point(400, 40),
-                AutoSize = true
-            };
-
-            // عدد التبني
-            Label lblAdoptTitle = new Label {
-                Text = "ADOPTIONS",
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DarkGray,
-                Location = new Point(550, 20),
-                AutoSize = true
-            };
-            Label lblAdoptVal = new Label {
-                Text = adoptions.ToString(),
-                Font = new Font("Segoe UI Bold", 10F),
-                Location = new Point(550, 40),
-                AutoSize = true
-            };
-
-            // أزرار التحكم (Edit / Expand)
-            Button btnEdit = new Button {
-                Text = "✎",
-                Size = new Size(35, 35),
-                Location = new Point(card.Width - 100, 30),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = ColorAccent
-            };
-            btnEdit.FlatAppearance.BorderSize = 0;
-            btnEdit.Paint += (s, e) => ApplyRoundedCorners(btnEdit, 10);
-
-            card.Controls.AddRange(new Control[] { pb, lblName, lblDetails, lblPhoneTitle, lblPhoneValue, lblAdoptTitle, lblAdoptVal, btnEdit });
-            flpCustomerList.Controls.Add(card);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Unable to open Add Customer form: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
-        // --- المساعد البرمجي للحواف الدائرية ---
-        private void ApplyRoundedCorners(Control ctrl, int radius)
+        // -------------------- Cell Click: Edit / Delete --------------------
+        private void DgvCustomers_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (ctrl.Width <= 0 || ctrl.Height <= 0) return;
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+
+            var col = dgvCustomers.Columns[e.ColumnIndex];
+            if (col.Name != "ColActions") return;
+
+            Rectangle cellRect = dgvCustomers.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false);
+            int relativeX = e.X - cellRect.X;
+            bool isEdit   = relativeX < cellRect.Width / 2;
+
+            var bound = dgvCustomers.Rows[e.RowIndex].DataBoundItem as Customer;
+            if (bound == null) return;
+
+            int id = bound.ID;
+
+            if (isEdit)
+            {
+                var customer = SharedCustomers.FirstOrDefault(c => c.ID == id);
+                if (customer == null) return;
+
+                try
+                {
+                    using (var dlg = new NewCustomerForm())
+                    {
+                        dlg.StartPosition = FormStartPosition.CenterParent;
+                        dlg.SetTitle("Edit Customer");
+                        dlg.LoadCustomerData(customer.ID, customer.Name, customer.Phone, customer.Email);
+
+                        if (dlg.ShowDialog(this) == DialogResult.OK)
+                        {
+                            customer.Name  = dlg.CustomerName;
+                            customer.Phone = dlg.CustomerPhone;
+                            customer.Email = dlg.CustomerEmail;
+
+                            RefreshGrid();
+                            CustomersChanged?.Invoke(this, EventArgs.Empty);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Unable to open Edit Customer form: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                var confirm = MessageBox.Show(
+                    "Are you sure you want to delete this customer?",
+                    "Confirm Delete",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+
+                if (confirm != DialogResult.Yes) return;
+
+                var toRemove = SharedCustomers.FirstOrDefault(c => c.ID == id);
+                if (toRemove != null)
+                {
+                    SharedCustomers.Remove(toRemove);
+                    RefreshGrid();
+                    CustomersChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+
+        // -------------------- Cell Painting (Actions column icons) --------------------
+        private void DgvCustomers_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+
+            var col = dgvCustomers.Columns[e.ColumnIndex];
+            if (col.Name != "ColActions") return;
+
+            e.PaintBackground(e.CellBounds, true);
+
+            int centerX = e.CellBounds.X + (e.CellBounds.Width / 2) - 10;
+            int centerY = e.CellBounds.Y + (e.CellBounds.Height / 2);
+
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+            // Left half: pencil/edit icon
+            using (Pen pen = new Pen(ColorTextSecondary, 2f))
+            {
+                Point p1 = new Point(centerX - 4, centerY + 4);
+                Point p2 = new Point(centerX + 4, centerY - 4);
+                e.Graphics.DrawLine(pen, p1, p2);
+
+                Point[] tip = {
+                    new Point(centerX - 6, centerY + 6),
+                    new Point(centerX - 4, centerY + 4),
+                    new Point(centerX - 6, centerY + 4)
+                };
+                using (SolidBrush brush = new SolidBrush(ColorTextSecondary))
+                    e.Graphics.FillPolygon(brush, tip);
+            }
+
+            // Right half: delete X icon
+            int dx = centerX + 18;
+            using (Pen redPen = new Pen(Color.FromArgb(211, 47, 47), 2f))
+            {
+                e.Graphics.DrawLine(redPen, dx - 4, centerY - 4, dx + 4, centerY + 4);
+                e.Graphics.DrawLine(redPen, dx + 4, centerY - 4, dx - 4, centerY + 4);
+            }
+
+            e.Handled = true;
+        }
+
+        // -------------------- Paint helpers (copied from AnimalsForm) --------------------
+        private void Panel_PaintRounded(object sender, PaintEventArgs e)
+        {
+            Control ctrl = sender as Control;
+            if (ctrl == null) return;
+
+            int radius = 16;
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
             using (GraphicsPath path = new GraphicsPath())
             {
-                path.AddArc(0, 0, radius, radius, 180, 90);
-                path.AddArc(ctrl.Width - radius, 0, radius, radius, 270, 90);
-                path.AddArc(ctrl.Width - radius, ctrl.Height - radius, radius, radius, 0, 90);
-                path.AddArc(0, ctrl.Height - radius, radius, radius, 90, 90);
+                path.AddArc(0, 0, radius * 2, radius * 2, 180, 90);
+                path.AddArc(ctrl.Width - (radius * 2), 0, radius * 2, radius * 2, 270, 90);
+                path.AddArc(ctrl.Width - (radius * 2), ctrl.Height - (radius * 2), radius * 2, radius * 2, 0, 90);
+                path.AddArc(0, ctrl.Height - (radius * 2), radius * 2, radius * 2, 90, 90);
                 path.CloseAllFigures();
                 ctrl.Region = new Region(path);
             }

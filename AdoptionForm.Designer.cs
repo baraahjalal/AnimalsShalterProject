@@ -17,14 +17,14 @@ namespace AnimalsShalterProject
 
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle13 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle14 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlTopBar = new System.Windows.Forms.Panel();
+            this.lblPageTitle = new System.Windows.Forms.Label();
             this.pnlSearchBox = new System.Windows.Forms.Panel();
             this.txtSearch = new System.Windows.Forms.TextBox();
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.btnNewAdoption = new System.Windows.Forms.Button();
-            this.lblPageTitle = new System.Windows.Forms.Label();
             this.pnlContent = new System.Windows.Forms.Panel();
             this.pnlDataContainer = new System.Windows.Forms.Panel();
             this.dgvAdoptions = new System.Windows.Forms.DataGridView();
@@ -65,6 +65,17 @@ namespace AnimalsShalterProject
             this.pnlTopBar.TabIndex = 0;
             this.pnlTopBar.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlTopBar_Paint);
             // 
+            // lblPageTitle
+            // 
+            this.lblPageTitle.AutoSize = true;
+            this.lblPageTitle.Font = new System.Drawing.Font("Segoe UI", 22F, System.Drawing.FontStyle.Bold);
+            this.lblPageTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
+            this.lblPageTitle.Location = new System.Drawing.Point(48, 27);
+            this.lblPageTitle.Name = "lblPageTitle";
+            this.lblPageTitle.Size = new System.Drawing.Size(165, 41);
+            this.lblPageTitle.TabIndex = 0;
+            this.lblPageTitle.Text = "Adoptions";
+            // 
             // pnlSearchBox
             // 
             this.pnlSearchBox.BackColor = System.Drawing.Color.White;
@@ -84,7 +95,7 @@ namespace AnimalsShalterProject
             this.txtSearch.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(138)))), ((int)(((byte)(147)))), ((int)(((byte)(141)))));
             this.txtSearch.Location = new System.Drawing.Point(15, 10);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(270, 23);
+            this.txtSearch.Size = new System.Drawing.Size(270, 18);
             this.txtSearch.TabIndex = 0;
             this.txtSearch.Text = "Search adoptions...";
             // 
@@ -115,17 +126,6 @@ namespace AnimalsShalterProject
             this.btnNewAdoption.UseVisualStyleBackColor = false;
             this.btnNewAdoption.Paint += new System.Windows.Forms.PaintEventHandler(this.Panel_PaintRounded);
             // 
-            // lblPageTitle
-            // 
-            this.lblPageTitle.AutoSize = true;
-            this.lblPageTitle.Font = new System.Drawing.Font("Segoe UI", 22F, System.Drawing.FontStyle.Bold);
-            this.lblPageTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
-            this.lblPageTitle.Location = new System.Drawing.Point(48, 27);
-            this.lblPageTitle.Name = "lblPageTitle";
-            this.lblPageTitle.Size = new System.Drawing.Size(203, 50);
-            this.lblPageTitle.TabIndex = 0;
-            this.lblPageTitle.Text = "Adoptions";
-            // 
             // pnlContent
             // 
             this.pnlContent.Controls.Add(this.pnlDataContainer);
@@ -134,7 +134,7 @@ namespace AnimalsShalterProject
             this.pnlContent.Location = new System.Drawing.Point(0, 0);
             this.pnlContent.Name = "pnlContent";
             this.pnlContent.Padding = new System.Windows.Forms.Padding(30, 80, 30, 30);
-            this.pnlContent.Size = new System.Drawing.Size(1000, 750);
+            this.pnlContent.Size = new System.Drawing.Size(1000, 749);
             this.pnlContent.TabIndex = 2;
             // 
             // pnlDataContainer
@@ -146,7 +146,7 @@ namespace AnimalsShalterProject
             this.pnlDataContainer.Location = new System.Drawing.Point(30, 180);
             this.pnlDataContainer.Name = "pnlDataContainer";
             this.pnlDataContainer.Padding = new System.Windows.Forms.Padding(20);
-            this.pnlDataContainer.Size = new System.Drawing.Size(940, 540);
+            this.pnlDataContainer.Size = new System.Drawing.Size(940, 539);
             this.pnlDataContainer.TabIndex = 2;
             this.pnlDataContainer.Paint += new System.Windows.Forms.PaintEventHandler(this.Panel_PaintRounded);
             // 
@@ -160,14 +160,14 @@ namespace AnimalsShalterProject
             this.dgvAdoptions.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgvAdoptions.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
             this.dgvAdoptions.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
-            dataGridViewCellStyle13.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle13.BackColor = System.Drawing.Color.White;
-            dataGridViewCellStyle13.Font = new System.Drawing.Font("Segoe UI", 10F);
-            dataGridViewCellStyle13.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
-            dataGridViewCellStyle13.SelectionBackColor = System.Drawing.Color.White;
-            dataGridViewCellStyle13.SelectionForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
-            dataGridViewCellStyle13.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvAdoptions.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle13;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 10F);
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvAdoptions.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvAdoptions.ColumnHeadersHeight = 50;
             this.dgvAdoptions.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.ColAdoptionId,
@@ -176,14 +176,14 @@ namespace AnimalsShalterProject
             this.ColPhone,
             this.ColDate,
             this.ColActions});
-            dataGridViewCellStyle14.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle14.BackColor = System.Drawing.Color.White;
-            dataGridViewCellStyle14.Font = new System.Drawing.Font("Segoe UI", 10F);
-            dataGridViewCellStyle14.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
-            dataGridViewCellStyle14.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(248)))), ((int)(((byte)(245)))));
-            dataGridViewCellStyle14.SelectionForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
-            dataGridViewCellStyle14.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvAdoptions.DefaultCellStyle = dataGridViewCellStyle14;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.Color.White;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Segoe UI", 10F);
+            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(248)))), ((int)(((byte)(245)))));
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvAdoptions.DefaultCellStyle = dataGridViewCellStyle2;
             this.dgvAdoptions.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvAdoptions.EnableHeadersVisualStyles = false;
             this.dgvAdoptions.GridColor = System.Drawing.Color.FromArgb(((int)(((byte)(239)))), ((int)(((byte)(239)))), ((int)(((byte)(239)))));
@@ -194,7 +194,7 @@ namespace AnimalsShalterProject
             this.dgvAdoptions.RowHeadersWidth = 51;
             this.dgvAdoptions.RowTemplate.Height = 60;
             this.dgvAdoptions.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvAdoptions.Size = new System.Drawing.Size(900, 440);
+            this.dgvAdoptions.Size = new System.Drawing.Size(900, 439);
             this.dgvAdoptions.TabIndex = 0;
             this.dgvAdoptions.CellPainting += new System.Windows.Forms.DataGridViewCellPaintingEventHandler(this.dgvAdoptions_CellPainting);
             // 
@@ -245,7 +245,7 @@ namespace AnimalsShalterProject
             this.pnlPagination.Controls.Add(this.lblPaginationInfo);
             this.pnlPagination.Controls.Add(this.flpPaginationButtons);
             this.pnlPagination.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlPagination.Location = new System.Drawing.Point(20, 460);
+            this.pnlPagination.Location = new System.Drawing.Point(20, 459);
             this.pnlPagination.Name = "pnlPagination";
             this.pnlPagination.Size = new System.Drawing.Size(900, 60);
             this.pnlPagination.TabIndex = 1;
@@ -257,7 +257,7 @@ namespace AnimalsShalterProject
             this.lblPaginationInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(138)))), ((int)(((byte)(147)))), ((int)(((byte)(141)))));
             this.lblPaginationInfo.Location = new System.Drawing.Point(0, 20);
             this.lblPaginationInfo.Name = "lblPaginationInfo";
-            this.lblPaginationInfo.Size = new System.Drawing.Size(221, 23);
+            this.lblPaginationInfo.Size = new System.Drawing.Size(182, 19);
             this.lblPaginationInfo.TabIndex = 0;
             this.lblPaginationInfo.Text = "Showing 1 to 5 of 42 results";
             // 
@@ -385,10 +385,10 @@ namespace AnimalsShalterProject
             // 
             // AdoptionForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 23F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(248)))), ((int)(((byte)(245)))));
-            this.ClientSize = new System.Drawing.Size(1000, 750);
+            this.ClientSize = new System.Drawing.Size(1000, 749);
             this.Controls.Add(this.pnlTopBar);
             this.Controls.Add(this.pnlContent);
             this.Font = new System.Drawing.Font("Segoe UI", 10F);

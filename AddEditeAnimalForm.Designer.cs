@@ -83,7 +83,7 @@ namespace AnimalsShalterProject
             this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
             this.lblTitle.Location = new System.Drawing.Point(25, 20);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(233, 37);
+            this.lblTitle.Size = new System.Drawing.Size(187, 30);
             this.lblTitle.TabIndex = 0;
             this.lblTitle.Text = "Add New Animal";
             // 
@@ -150,7 +150,7 @@ namespace AnimalsShalterProject
             this.lblTxtName.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
             this.lblTxtName.Location = new System.Drawing.Point(30, 95);
             this.lblTxtName.Name = "lblTxtName";
-            this.lblTxtName.Size = new System.Drawing.Size(57, 23);
+            this.lblTxtName.Size = new System.Drawing.Size(49, 19);
             this.lblTxtName.TabIndex = 2;
             this.lblTxtName.Text = "Name";
             // 
@@ -174,7 +174,7 @@ namespace AnimalsShalterProject
             this.txtName.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
             this.txtName.Location = new System.Drawing.Point(12, 12);
             this.txtName.Name = "txtName";
-            this.txtName.Size = new System.Drawing.Size(396, 23);
+            this.txtName.Size = new System.Drawing.Size(396, 18);
             this.txtName.TabIndex = 0;
             // 
             // lblTxtType
@@ -184,7 +184,7 @@ namespace AnimalsShalterProject
             this.lblTxtType.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
             this.lblTxtType.Location = new System.Drawing.Point(30, 180);
             this.lblTxtType.Name = "lblTxtType";
-            this.lblTxtType.Size = new System.Drawing.Size(48, 23);
+            this.lblTxtType.Size = new System.Drawing.Size(41, 19);
             this.lblTxtType.TabIndex = 4;
             this.lblTxtType.Text = "Type";
             // 
@@ -215,7 +215,7 @@ namespace AnimalsShalterProject
             "Other"});
             this.cmbType.Location = new System.Drawing.Point(12, 10);
             this.cmbType.Name = "cmbType";
-            this.cmbType.Size = new System.Drawing.Size(176, 31);
+            this.cmbType.Size = new System.Drawing.Size(176, 25);
             this.cmbType.TabIndex = 0;
             // 
             // lblTxtAge
@@ -225,7 +225,7 @@ namespace AnimalsShalterProject
             this.lblTxtAge.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
             this.lblTxtAge.Location = new System.Drawing.Point(250, 180);
             this.lblTxtAge.Name = "lblTxtAge";
-            this.lblTxtAge.Size = new System.Drawing.Size(42, 23);
+            this.lblTxtAge.Size = new System.Drawing.Size(36, 19);
             this.lblTxtAge.TabIndex = 6;
             this.lblTxtAge.Text = "Age";
             // 
@@ -249,7 +249,7 @@ namespace AnimalsShalterProject
             this.txtAge.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
             this.txtAge.Location = new System.Drawing.Point(12, 12);
             this.txtAge.Name = "txtAge";
-            this.txtAge.Size = new System.Drawing.Size(176, 23);
+            this.txtAge.Size = new System.Drawing.Size(176, 18);
             this.txtAge.TabIndex = 0;
             // 
             // lblTxtHealth
@@ -259,7 +259,7 @@ namespace AnimalsShalterProject
             this.lblTxtHealth.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
             this.lblTxtHealth.Location = new System.Drawing.Point(30, 265);
             this.lblTxtHealth.Name = "lblTxtHealth";
-            this.lblTxtHealth.Size = new System.Drawing.Size(118, 23);
+            this.lblTxtHealth.Size = new System.Drawing.Size(97, 19);
             this.lblTxtHealth.TabIndex = 8;
             this.lblTxtHealth.Text = "Health Status";
             // 
@@ -289,7 +289,7 @@ namespace AnimalsShalterProject
             "Sick"});
             this.cmbHealth.Location = new System.Drawing.Point(12, 10);
             this.cmbHealth.Name = "cmbHealth";
-            this.cmbHealth.Size = new System.Drawing.Size(396, 31);
+            this.cmbHealth.Size = new System.Drawing.Size(396, 25);
             this.cmbHealth.TabIndex = 0;
             // 
             // lblTxtStatus
@@ -299,7 +299,7 @@ namespace AnimalsShalterProject
             this.lblTxtStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(51)))), ((int)(((byte)(46)))));
             this.lblTxtStatus.Location = new System.Drawing.Point(30, 350);
             this.lblTxtStatus.Name = "lblTxtStatus";
-            this.lblTxtStatus.Size = new System.Drawing.Size(60, 23);
+            this.lblTxtStatus.Size = new System.Drawing.Size(49, 19);
             this.lblTxtStatus.TabIndex = 10;
             this.lblTxtStatus.Text = "Status";
             // 
@@ -329,12 +329,12 @@ namespace AnimalsShalterProject
             "In Care"});
             this.cmbStatus.Location = new System.Drawing.Point(12, 10);
             this.cmbStatus.Name = "cmbStatus";
-            this.cmbStatus.Size = new System.Drawing.Size(396, 31);
+            this.cmbStatus.Size = new System.Drawing.Size(396, 25);
             this.cmbStatus.TabIndex = 0;
             // 
             // AddEditeAnimalForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 23F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(480, 570);

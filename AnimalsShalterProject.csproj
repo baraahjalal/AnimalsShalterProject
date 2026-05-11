@@ -83,6 +83,9 @@
     <Compile Include="NewCustomerForm.Designer.cs">
       <DependentUpon>NewCustomerForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Product.cs" />
+    <Compile Include="Customer.cs" />
+    <Compile Include="Adoption.cs" />
     <Compile Include="RecordDonationForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -143,6 +146,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="AnimalsForm.resx">
       <DependentUpon>AnimalsForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="LoginForm.resx">
       <DependentUpon>LoginForm.cs</DependentUpon>

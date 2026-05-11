@@ -9,56 +9,63 @@ namespace AnimalsShalterProject
     public partial class RegisterAdoptionForm : Form
     {
         // --- STYLING CONSTANTS ---
-        private readonly Color ColorInputBorder = ColorTranslator.FromHtml("#D3D8D5");
+        private readonly Color ColorInputBorder  = ColorTranslator.FromHtml("#D3D8D5");
         private readonly Color ColorPrimaryGreen = ColorTranslator.FromHtml("#457357");
 
-        // Exposed properties for the created adoption
-        public string AdoptionId { get; private set; }
-        public string AnimalName { get; private set; }
+        // --- Output properties (read by AdoptionForm after DialogResult.OK) ---
+        public string AnimalName   { get; private set; }
         public string CustomerName { get; private set; }
-        public string Phone { get; private set; }
+        public string Phone        { get; private set; }
         public string DateFormatted { get; private set; }
-        public bool FeePaid { get; private set; }
+        public bool   FeePaid      { get; private set; }
+
+        // --- NEW: ID-based output for Adoption record ---
+        public int SelectedAnimalID   { get; private set; }
+        public int SelectedCustomerID { get; private set; }
+
+        // Keep old AdoptionId property for backward compatibility with any caller
+        public string AdoptionId { get; private set; }
 
         public RegisterAdoptionForm()
         {
             InitializeComponent();
             this.Load += RegisterAdoptionForm_Load;
 
-            // Wire buttons
-            this.btnClose.Click += btnClose_Click;
-            this.btnCancel.Click += btnClose_Click;
+            this.btnClose.Click   += btnClose_Click;
+            this.btnCancel.Click  += btnClose_Click;
             this.btnConfirm.Click += BtnConfirm_Click;
         }
 
         private void RegisterAdoptionForm_Load(object sender, EventArgs e)
         {
-            // Apply rounded corners to the form itself
             ApplyRoundedRegion(this, 15);
 
-            // Populate animals from in-memory list
+            // --- Change A: Populate animals from SharedAnimals, ONLY non-adopted ones ---
+            cmbAnimal.DataSource    = null;
             cmbAnimal.Items.Clear();
-            foreach (var a in AnimalsForm.SharedAnimals)
-            {
-                cmbAnimal.Items.Add(a.Name);
-            }
+            var availableAnimals = AnimalsForm.SharedAnimals
+                .Where(a => !string.Equals(a.Status, "Adopted", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            cmbAnimal.DataSource    = availableAnimals;
+            cmbAnimal.DisplayMember = "Name";
+            cmbAnimal.ValueMember   = "ID";
             if (cmbAnimal.Items.Count > 0) cmbAnimal.SelectedIndex = 0;
 
-            // Populate customers from UsersStore
+            // --- Change B: Populate customers from SharedCustomers (not UsersStore) ---
+            cmbCustomer.DataSource    = null;
             cmbCustomer.Items.Clear();
-            foreach (var u in UsersStore.Users)
-            {
-                cmbCustomer.Items.Add(u);
-            }
+            var customers = CustomersForm.SharedCustomers.ToList();
+            cmbCustomer.DataSource    = customers;
+            cmbCustomer.DisplayMember = "Name";
+            cmbCustomer.ValueMember   = "ID";
             if (cmbCustomer.Items.Count > 0) cmbCustomer.SelectedIndex = 0;
 
-            // Set default date
             dtpDate.Value = DateTime.Now;
         }
 
         private void BtnConfirm_Click(object sender, EventArgs e)
         {
-            // Basic validation
+            // Validation
             if (cmbAnimal.SelectedItem == null)
             {
                 MessageBox.Show("Please select an animal.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -70,29 +77,45 @@ namespace AnimalsShalterProject
                 return;
             }
 
-            // Assign properties
-            AdoptionId = "#AD-" + DateTime.Now.ToString("yyyyMMddHHmmss");
-            AnimalName = cmbAnimal.SelectedItem.ToString();
-            CustomerName = cmbCustomer.SelectedItem.ToString();
-            Phone = ""; // Phone not collected here (could extend UI)
-            DateFormatted = dtpDate.Value.ToString("MMM d, yyyy");
-            FeePaid = rbPaid.Checked;
+            var selectedAnimal   = cmbAnimal.SelectedItem   as Animal;
+            var selectedCustomer = cmbCustomer.SelectedItem as Customer;
 
-            // Optionally mark the animal as Adopted in SharedAnimals
-            var animal = AnimalsForm.SharedAnimals.FirstOrDefault(a => string.Equals(a.Name, AnimalName, StringComparison.OrdinalIgnoreCase));
-            if (animal != null)
+            if (selectedAnimal == null || selectedCustomer == null) return;
+
+            // --- Defensive double-adoption check ---
+            if (string.Equals(selectedAnimal.Status, "Adopted", StringComparison.OrdinalIgnoreCase))
             {
-                animal.Status = "Adopted";
+                MessageBox.Show(
+                    $"'{selectedAnimal.Name}' has already been adopted and cannot be selected.",
+                    "Already Adopted",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
             }
 
-            // Notify listeners via AnimalsForm delegate
+            // Assign output properties
+            SelectedAnimalID   = selectedAnimal.ID;
+            SelectedCustomerID = selectedCustomer.ID;
+
+            AnimalName    = selectedAnimal.Name;
+            CustomerName  = selectedCustomer.Name;
+            Phone         = selectedCustomer.Phone ?? "";
+            DateFormatted = dtpDate.Value.ToString("MMM d, yyyy");
+            FeePaid       = rbPaid.Checked;
+            AdoptionId    = "#AD-" + DateTime.Now.ToString("yyyyMMddHHmmss");
+
+            // Mark animal as Adopted in SharedAnimals
+            var animal = AnimalsForm.SharedAnimals.FirstOrDefault(a => a.ID == SelectedAnimalID);
+            if (animal != null)
+                animal.Status = "Adopted";
+
+            // Notify AnimalsForm listeners
             AnimalsForm.AnimalsChanged?.Invoke(this, EventArgs.Empty);
 
             this.DialogResult = DialogResult.OK;
             this.Close();
         }
 
-        // --- FORM CLOSING EVENT ---
         private void btnClose_Click(object sender, EventArgs e)
         {
             this.Close();
@@ -108,7 +131,6 @@ namespace AnimalsShalterProject
                 path.AddArc(ctrl.Width - (radius * 2), ctrl.Height - (radius * 2), radius * 2, radius * 2, 0, 90);
                 path.AddArc(0, ctrl.Height - (radius * 2), radius * 2, radius * 2, 90, 90);
                 path.CloseAllFigures();
-
                 ctrl.Region = new Region(path);
             }
         }
@@ -119,7 +141,7 @@ namespace AnimalsShalterProject
             Panel pnl = sender as Panel;
             if (pnl == null) return;
 
-            int radius = 8; // Inner radius for inputs
+            int radius = 8;
             ApplyRoundedRegion(pnl, radius);
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -133,9 +155,7 @@ namespace AnimalsShalterProject
                 path.CloseFigure();
 
                 using (Pen pen = new Pen(ColorInputBorder, 1.5f))
-                {
                     e.Graphics.DrawPath(pen, path);
-                }
             }
         }
 
@@ -160,9 +180,7 @@ namespace AnimalsShalterProject
                     path.CloseFigure();
 
                     using (Pen pen = new Pen(ColorInputBorder, 1.5f))
-                    {
                         e.Graphics.DrawPath(pen, path);
-                    }
                 }
             }
         }
