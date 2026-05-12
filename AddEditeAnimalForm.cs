@@ -11,7 +11,6 @@ namespace AnimalsShalterProject
         private readonly Color ColorInputBorder = ColorTranslator.FromHtml("#D3D8D5");
         private readonly Color ColorPrimaryGreen = ColorTranslator.FromHtml("#457357");
 
-        // حقول التطعيم — تُنشأ برمجياً
         private CheckBox chkVaccinated;
         private Label lblLastVaccine;
         private DateTimePicker dtpLastVaccine;
@@ -31,8 +30,21 @@ namespace AnimalsShalterProject
         }
         public string AnimalAge
         {
-            get => txtAge.Text;
-            set => txtAge.Text = value;
+            get => $"{(int)nudAge.Value} {cmbAgeUnit.SelectedItem}";
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value)) return;
+                var parts = value.Trim().Split(' ');
+                if (parts.Length >= 2 && int.TryParse(parts[0], out int num))
+                {
+                    nudAge.Value = Math.Min(Math.Max(num, 0), 30);
+                    cmbAgeUnit.SelectedItem = parts[1].ToLower().Contains("month") ? "Months" : "Years";
+                }
+                else if (int.TryParse(value.Trim(), out int n))
+                {
+                    nudAge.Value = Math.Min(Math.Max(n, 0), 30);
+                }
+            }
         }
         public string HealthStatus
         {
@@ -57,7 +69,6 @@ namespace AnimalsShalterProject
         {
             ApplyRoundedRegion(this, 16);
 
-            // Add mode — Status مقفول على Available
             if (AnimalId < 0)
             {
                 cmbStatus.SelectedItem = "Available";
@@ -72,18 +83,12 @@ namespace AnimalsShalterProject
                 lblTxtStatus.ForeColor = Color.FromArgb(211, 47, 47);
             }
 
-            // بناء حقول التطعيم
             BuildVaccineFields();
-
-            // تحديث ظهور حقول التطعيم حسب النوع المختار
             UpdateVaccineVisibility();
         }
 
         private void BuildVaccineFields()
         {
-            // الـ form حالياً ارتفاعه 570 — نوسعه ونضيف الحقول بعد Status
-
-            // CheckBox — هل مطعم؟
             chkVaccinated = new CheckBox
             {
                 Text = "Vaccinated?",
@@ -97,7 +102,6 @@ namespace AnimalsShalterProject
             chkVaccinated.CheckedChanged += (s, e) => UpdateVaccineDateVisibility();
             this.Controls.Add(chkVaccinated);
 
-            // Label — تاريخ آخر تطعيمة
             lblLastVaccine = new Label
             {
                 Text = "Last Vaccine Date",
@@ -109,7 +113,6 @@ namespace AnimalsShalterProject
             };
             this.Controls.Add(lblLastVaccine);
 
-            // DateTimePicker
             dtpLastVaccine = new DateTimePicker
             {
                 Format = DateTimePickerFormat.Short,
@@ -121,7 +124,6 @@ namespace AnimalsShalterProject
             };
             this.Controls.Add(dtpLastVaccine);
 
-            // Note — الموعد القادم
             lblVaccineNote = new Label
             {
                 Text = "",
@@ -133,14 +135,10 @@ namespace AnimalsShalterProject
             };
             this.Controls.Add(lblVaccineNote);
 
-            // نوسع الـ form لما تظهر الحقول
             dtpLastVaccine.ValueChanged += (s, e) => UpdateVaccineNote();
         }
 
-        private void CmbType_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            UpdateVaccineVisibility();
-        }
+        private void CmbType_SelectedIndexChanged(object sender, EventArgs e) => UpdateVaccineVisibility();
 
         private void UpdateVaccineVisibility()
         {
@@ -152,17 +150,16 @@ namespace AnimalsShalterProject
 
             if (isDogOrCat)
             {
-                this.ClientSize = new System.Drawing.Size(480, 640);
+                this.ClientSize = new Size(480, 640);
                 UpdateVaccineDateVisibility();
             }
             else
             {
-                this.ClientSize = new System.Drawing.Size(480, 570);
+                this.ClientSize = new Size(480, 570);
                 dtpLastVaccine.Visible = false;
                 lblVaccineNote.Visible = false;
             }
 
-            // نعيد تطبيق الـ rounded corners بعد تغيير الحجم
             ApplyRoundedRegion(this, 16);
         }
 
@@ -170,11 +167,8 @@ namespace AnimalsShalterProject
         {
             bool isDogOrCat = cmbType.SelectedItem?.ToString() == "Dog" ||
                               cmbType.SelectedItem?.ToString() == "Cat";
-
             if (!isDogOrCat) return;
 
-            // سواء مطعم أو لا — نعرض الـ DatePicker
-            // لو مطعم: "آخر تطعيمة"، لو مش مطعم: "تاريخ التسجيل"
             dtpLastVaccine.Visible = true;
             lblVaccineNote.Visible = true;
 
@@ -187,18 +181,16 @@ namespace AnimalsShalterProject
 
         private void UpdateVaccineNote()
         {
-            if (dtpLastVaccine == null || lblVaccineNote == null) return;
-            if (!dtpLastVaccine.Visible) return;
+            if (dtpLastVaccine == null || lblVaccineNote == null || !dtpLastVaccine.Visible) return;
 
             DateTime nextVaccine = dtpLastVaccine.Value.AddMonths(1);
             int daysLeft = (nextVaccine.Date - DateTime.Today).Days;
 
-            if (daysLeft < 0)
-                lblVaccineNote.Text = $"⚠️ Next vaccine: {nextVaccine:MMM dd, yyyy} (Overdue by {-daysLeft} days)";
-            else if (daysLeft == 0)
-                lblVaccineNote.Text = $"🔔 Next vaccine: TODAY ({nextVaccine:MMM dd, yyyy})";
-            else
-                lblVaccineNote.Text = $"✅ Next vaccine: {nextVaccine:MMM dd, yyyy} ({daysLeft} days left)";
+            lblVaccineNote.Text = daysLeft < 0
+                ? $"⚠️ Next vaccine: {nextVaccine:MMM dd, yyyy} (Overdue by {-daysLeft} days)"
+                : daysLeft == 0
+                    ? $"🔔 Next vaccine: TODAY ({nextVaccine:MMM dd, yyyy})"
+                    : $"✅ Next vaccine: {nextVaccine:MMM dd, yyyy} ({daysLeft} days left)";
 
             lblVaccineNote.ForeColor = daysLeft < 0
                 ? Color.FromArgb(198, 40, 40)
@@ -234,7 +226,6 @@ namespace AnimalsShalterProject
                         existing.LastVaccineDate = dtpLastVaccine.Value.Date;
                         existing.VaccineDate = dtpLastVaccine.Value.Date.AddMonths(1);
                     }
-
                     AnimalsForm.AnimalsChanged?.Invoke(this, EventArgs.Empty);
                 }
             }
@@ -278,7 +269,6 @@ namespace AnimalsShalterProject
             this.lblTitle.Text = (id >= 0) ? "Edit Animal" : "Add New Animal";
         }
 
-        // لتحميل بيانات التطعيم في Edit mode
         public void LoadVaccineData(bool isVaccinated, DateTime? lastVaccineDate)
         {
             if (chkVaccinated != null)
