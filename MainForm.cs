@@ -125,59 +125,93 @@ namespace AnimalsShalterProject
             pnlMainContent.Controls.Add(tlpDashboard);
             pnlMainContent.Controls.Add(flpStats);
 
-            // Vaccine alerts panel — نبنيه برمجياً فوق tlpDashboard
             BuildVaccineAlertsPanel();
 
             RefreshDashboardStats();
             RefreshRecentAdoptions();
             RefreshLowStockAlerts();
             RefreshVaccineAlerts();
+            WireStatCards();
         }
 
-        // -------------------- Vaccine Alerts Panel --------------------
+        // -------------------- Stat Cards Clickable --------------------
+        private void WireStatCards()
+        {
+            MakeCardClickable(pnlStatCard1, () => { SetActiveButton(btnAnimals); SwitchView(new AnimalsForm()); });
+            MakeCardClickable(pnlStatCard2, () => { SetActiveButton(btnAnimals); SwitchView(new AnimalsForm()); });
+            MakeCardClickable(pnlStatCard3, () => { SetActiveButton(btnProducts); SwitchView(new ProductsForm()); });
+            MakeCardClickable(pnlStatCard4, () => { SetActiveButton(btnSales); SwitchView(new SalesForm()); });
+            MakeCardClickable(pnlAlerts, () => { SetActiveButton(btnProducts); SwitchView(new ProductsForm()); });
+        }
+
+        private void MakeCardClickable(Panel panel, Action onClick)
+        {
+            if (panel == null) return;
+            panel.Cursor = Cursors.Hand;
+            panel.Click += (s, e) => onClick();
+            foreach (Control child in panel.Controls)
+            {
+                child.Cursor = Cursors.Hand;
+                child.Click += (s, e) => onClick();
+            }
+        }
+
+        // -------------------- Vaccine Alerts --------------------
         private void BuildVaccineAlertsPanel()
         {
-            // نحذف القديم لو موجود
             if (pnlVaccineAlerts != null && pnlMainContent.Controls.Contains(pnlVaccineAlerts))
                 pnlMainContent.Controls.Remove(pnlVaccineAlerts);
 
             pnlVaccineAlerts = new Panel
             {
                 BackColor = Color.FromArgb(255, 235, 238),
-                Height = 0, // نخليه صفر في البداية، يكبر لما يكون فيه بيانات
-                Dock = DockStyle.Top,
-                Padding = new Padding(16, 10, 16, 10),
+                Width = 300,
+                Height = 0,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Padding = new Padding(12),
+                BorderStyle = BorderStyle.None,
+            };
+
+            pnlVaccineAlerts.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(183, 28, 28), 2f))
+                {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    Rectangle rect = new Rectangle(1, 1, pnlVaccineAlerts.Width - 2, pnlVaccineAlerts.Height - 2);
+                    int r = 10;
+                    using (GraphicsPath path = new GraphicsPath())
+                    {
+                        path.AddArc(rect.X, rect.Y, r * 2, r * 2, 180, 90);
+                        path.AddArc(rect.Right - r * 2, rect.Y, r * 2, r * 2, 270, 90);
+                        path.AddArc(rect.Right - r * 2, rect.Bottom - r * 2, r * 2, r * 2, 0, 90);
+                        path.AddArc(rect.X, rect.Bottom - r * 2, r * 2, r * 2, 90, 90);
+                        path.CloseFigure();
+                        pnlVaccineAlerts.Region = new Region(path);
+                        e.Graphics.DrawPath(pen, path);
+                    }
+                }
             };
 
             pnlMainContent.Controls.Add(pnlVaccineAlerts);
             pnlVaccineAlerts.BringToFront();
         }
 
+        public void RefreshVaccineAlertsPublic() => RefreshVaccineAlerts();
+
         private void RefreshVaccineAlerts()
         {
             if (pnlVaccineAlerts == null) return;
             pnlVaccineAlerts.Controls.Clear();
 
-            // نجيب كلاب وقطط فقط عندهم VaccineDate
-            var alerts = AnimalsForm.SharedAnimals?
-                .Where(a => (a.Type == "Dog" || a.Type == "Cat") && a.VaccineDate.HasValue)
-                .Select(a => new
-                {
-                    a.Name,
-                    a.Type,
-                    NextVaccine = a.VaccineDate.Value.Date,
-                    DaysLeft = (a.VaccineDate.Value.Date - DateTime.Today).Days,
-                    IsVaccinated = a.IsVaccinated
-                })
-                .OrderBy(a => a.DaysLeft)
+            var toShow = AnimalsForm.SharedAnimals?
+                .Where(a => (a.Type == "Dog" || a.Type == "Cat")
+                         && a.VaccineDate.HasValue
+                         && (a.VaccineDate.Value.Date - DateTime.Today).Days <= 14)
+                .OrderBy(a => a.VaccineDate.Value.Date)
                 .ToList();
-
-            // نعرض بس اللي موعدهم خلال 14 يوم أو فات
-            var toShow = alerts?.Where(a => a.DaysLeft <= 14).ToList();
 
             if (toShow == null || toShow.Count == 0)
             {
-                pnlVaccineAlerts.Height = 0;
                 pnlVaccineAlerts.Visible = false;
                 return;
             }
@@ -186,57 +220,58 @@ namespace AnimalsShalterProject
 
             int top = 10;
 
-            // عنوان
             var lblTitle = new Label
             {
                 Text = "🔴  Vaccine Reminders",
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(183, 28, 28),
-                Left = 16,
+                Left = 12,
                 Top = top,
-                AutoSize = true,
+                Width = 276,
+                Height = 22,
             };
             pnlVaccineAlerts.Controls.Add(lblTitle);
-            top += 28;
+            top += 26;
+
+            var sep = new Panel
+            {
+                Left = 12,
+                Top = top,
+                Width = 276,
+                Height = 1,
+                BackColor = Color.FromArgb(220, 180, 180),
+            };
+            pnlVaccineAlerts.Controls.Add(sep);
+            top += 8;
 
             foreach (var a in toShow)
             {
-                string icon = a.DaysLeft < 0 ? "⛔" : a.DaysLeft == 0 ? "🔔" : "⚠️";
-                string dayText = a.DaysLeft < 0
-                    ? $"Overdue by {-a.DaysLeft} days"
-                    : a.DaysLeft == 0
-                        ? "Due TODAY"
-                        : $"{a.DaysLeft} days left";
+                int daysLeft = (a.VaccineDate.Value.Date - DateTime.Today).Days;
+                string icon = daysLeft < 0 ? "⛔" : daysLeft == 0 ? "🔔" : "⚠️";
+                string days = daysLeft < 0 ? $"Overdue {-daysLeft}d"
+                             : daysLeft == 0 ? "TODAY"
+                             : $"{daysLeft} days left";
 
-                string vaccineStatus = a.IsVaccinated ? "Last vaccinated" : "Not yet vaccinated";
-
-                var row = new Panel
+                var row = new Label
                 {
-                    Left = 16,
-                    Top = top,
-                    Width = pnlVaccineAlerts.Width - 40,
-                    Height = 36,
-                    BackColor = Color.Transparent,
-                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                };
-
-                var lblRow = new Label
-                {
-                    Text = $"{icon}  {a.Name} ({a.Type})  —  Next vaccine: {a.NextVaccine:MMM dd, yyyy}  •  {dayText}  •  {vaccineStatus}",
-                    Font = new Font("Segoe UI", 9F),
-                    ForeColor = a.DaysLeft < 0
+                    Text = $"{icon} {a.Name} ({a.Type})  •  {a.VaccineDate.Value:MMM dd}  •  {days}",
+                    Font = new Font("Segoe UI", 8.5F),
+                    ForeColor = daysLeft < 0
                         ? Color.FromArgb(183, 28, 28)
                         : Color.FromArgb(109, 0, 26),
-                    Dock = DockStyle.Fill,
+                    Left = 12,
+                    Top = top,
+                    Width = 276,
+                    Height = 30,
                     TextAlign = ContentAlignment.MiddleLeft,
                 };
-
-                row.Controls.Add(lblRow);
                 pnlVaccineAlerts.Controls.Add(row);
-                top += 40;
+                top += 32;
             }
 
             pnlVaccineAlerts.Height = top + 10;
+            pnlVaccineAlerts.Left = pnlMainContent.Width - pnlVaccineAlerts.Width - 20;
+            pnlVaccineAlerts.Top = 20;
         }
 
         // -------------------- Dashboard Stats --------------------
@@ -320,6 +355,7 @@ namespace AnimalsShalterProject
                     BackColor = product.Stock == 0
                         ? Color.FromArgb(255, 235, 238)
                         : Color.FromArgb(255, 243, 205),
+                    Cursor = Cursors.Hand,
                 };
 
                 var lblName = new Label
@@ -330,6 +366,7 @@ namespace AnimalsShalterProject
                     Left = 10,
                     Top = 8,
                     AutoSize = true,
+                    Cursor = Cursors.Hand,
                 };
 
                 var lblStock = new Label
@@ -344,7 +381,13 @@ namespace AnimalsShalterProject
                     Left = 10,
                     Top = 28,
                     AutoSize = true,
+                    Cursor = Cursors.Hand,
                 };
+
+                // كل row في Low Stock يفتح Products
+                pnl.Click += (s, e) => { SetActiveButton(btnProducts); SwitchView(new ProductsForm()); };
+                lblName.Click += (s, e) => { SetActiveButton(btnProducts); SwitchView(new ProductsForm()); };
+                lblStock.Click += (s, e) => { SetActiveButton(btnProducts); SwitchView(new ProductsForm()); };
 
                 pnl.Controls.Add(lblName);
                 pnl.Controls.Add(lblStock);
