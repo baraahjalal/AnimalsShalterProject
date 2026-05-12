@@ -9,96 +9,172 @@ namespace AnimalsShalterProject
 {
     public partial class CustomersForm : Form
     {
-        // --- STATIC SHARED LIST (mirrors AnimalsForm.SharedAnimals pattern) ---
         public static EventHandler CustomersChanged;
         public static List<Customer> SharedCustomers = new List<Customer>();
         private BindingSource bsCustomers = new BindingSource();
 
-        // --- STYLING CONSTANTS (copied exactly from AnimalsForm) ---
-        private readonly Color ColorPrimaryGreen  = ColorTranslator.FromHtml("#457357");
-        private readonly Color ColorTextPrimary   = ColorTranslator.FromHtml("#2A332E");
+        private readonly Color ColorPrimaryGreen = ColorTranslator.FromHtml("#457357");
+        private readonly Color ColorTextPrimary = ColorTranslator.FromHtml("#2A332E");
         private readonly Color ColorTextSecondary = ColorTranslator.FromHtml("#8A938D");
+
+        // --- Task H: History Panel Controls ---
+        private TabControl tabHistory;
+        private DataGridView dgvHistoryAdoptions;
+        private DataGridView dgvHistorySales;
+        private DataGridView dgvHistoryDonations;
 
         public CustomersForm()
         {
             InitializeComponent();
 
-            // Wire events
             this.btnAddCustomer.Click += BtnAddCustomer_Click;
             this.txtSearch.TextChanged += TxtSearch_TextChanged;
             this.dgvCustomers.CellMouseClick += DgvCustomers_CellMouseClick;
-            this.dgvCustomers.CellPainting   += DgvCustomers_CellPainting;
+            this.dgvCustomers.CellPainting += DgvCustomers_CellPainting;
+            this.dgvCustomers.SelectionChanged += DgvCustomers_SelectionChanged;
 
             this.Load += CustomersForm_Load;
         }
 
-        // -------------------- Load --------------------
         private void CustomersForm_Load(object sender, EventArgs e)
         {
             if (SharedCustomers.Count == 0)
             {
-                SharedCustomers.Add(new Customer { ID = 1, Name = "Ahmed Ali",      Phone = "091-234-5678", Email = "ahmed.ali@email.com",      JoinDate = new DateTime(2022, 3, 15) });
-                SharedCustomers.Add(new Customer { ID = 2, Name = "Sara Mohamed",   Phone = "092-876-5432", Email = "sara.m@email.com",          JoinDate = new DateTime(2023, 1, 8)  });
-                SharedCustomers.Add(new Customer { ID = 3, Name = "Khalid Omar",    Phone = "091-998-1122", Email = "khalid.omar@email.com",     JoinDate = new DateTime(2021, 11, 20) });
-                SharedCustomers.Add(new Customer { ID = 4, Name = "Fatima Hassan",  Phone = "093-445-6677", Email = "fatima.h@email.com",        JoinDate = new DateTime(2023, 6, 1)  });
-                SharedCustomers.Add(new Customer { ID = 5, Name = "Yusuf Ibrahim",  Phone = "091-332-9988", Email = "yusuf.ibrahim@email.com",   JoinDate = new DateTime(2022, 9, 14) });
+                SharedCustomers.Add(new Customer { ID = 1, Name = "Ahmed Ali", Phone = "091-234-5678", Email = "ahmed.ali@email.com", JoinDate = new DateTime(2022, 3, 15) });
+                SharedCustomers.Add(new Customer { ID = 2, Name = "Sara Mohamed", Phone = "092-876-5432", Email = "sara.m@email.com", JoinDate = new DateTime(2023, 1, 8) });
+                SharedCustomers.Add(new Customer { ID = 3, Name = "Khalid Omar", Phone = "091-998-1122", Email = "khalid.omar@email.com", JoinDate = new DateTime(2021, 11, 20) });
+                SharedCustomers.Add(new Customer { ID = 4, Name = "Fatima Hassan", Phone = "093-445-6677", Email = "fatima.h@email.com", JoinDate = new DateTime(2023, 6, 1) });
+                SharedCustomers.Add(new Customer { ID = 5, Name = "Yusuf Ibrahim", Phone = "091-332-9988", Email = "yusuf.ibrahim@email.com", JoinDate = new DateTime(2022, 9, 14) });
             }
 
             SetupGrid();
             RefreshGrid();
+            SetupHistoryPanel();
         }
 
-        // -------------------- SetupGrid (called once) --------------------
         private void SetupGrid()
         {
             dgvCustomers.AutoGenerateColumns = false;
-
             dgvCustomers.Columns.Clear();
 
-            // Hidden ID column
-            var colId = new DataGridViewTextBoxColumn
-            {
-                Name = "ColId", HeaderText = "ID",
-                DataPropertyName = "ID", Visible = false
-            };
-            dgvCustomers.Columns.Add(colId);
-
-            var colName = new DataGridViewTextBoxColumn
-            {
-                Name = "ColName", HeaderText = "Customer Name",
-                DataPropertyName = "Name"
-            };
-            dgvCustomers.Columns.Add(colName);
-
-            var colPhone = new DataGridViewTextBoxColumn
-            {
-                Name = "ColPhone", HeaderText = "Phone",
-                DataPropertyName = "Phone"
-            };
-            dgvCustomers.Columns.Add(colPhone);
-
-            var colEmail = new DataGridViewTextBoxColumn
-            {
-                Name = "ColEmail", HeaderText = "Email",
-                DataPropertyName = "Email"
-            };
-            dgvCustomers.Columns.Add(colEmail);
-
-            var colJoin = new DataGridViewTextBoxColumn
-            {
-                Name = "ColJoinDate", HeaderText = "Join Date",
-                DataPropertyName = "JoinDate"
-            };
-            dgvCustomers.Columns.Add(colJoin);
-
-            var colActions = new DataGridViewTextBoxColumn
-            {
-                Name = "ColActions", HeaderText = "Actions"
-            };
-            dgvCustomers.Columns.Add(colActions);
+            dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColId", HeaderText = "ID", DataPropertyName = "ID", Visible = false });
+            dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColName", HeaderText = "Customer Name", DataPropertyName = "Name" });
+            dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColPhone", HeaderText = "Phone", DataPropertyName = "Phone" });
+            dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColEmail", HeaderText = "Email", DataPropertyName = "Email" });
+            dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColJoinDate", HeaderText = "Join Date", DataPropertyName = "JoinDate" });
+            dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColActions", HeaderText = "Actions" });
 
             dgvCustomers.DataSource = bsCustomers;
             dgvCustomers.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        }
+
+        // -------------------- Task H: Setup History Panel --------------------
+        private void SetupHistoryPanel()
+        {
+            // shrink the main grid to top half
+            dgvCustomers.Dock = DockStyle.None;
+            dgvCustomers.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            dgvCustomers.Height = this.ClientSize.Height / 2 - 60;
+            dgvCustomers.Top = dgvCustomers.Top;
+            dgvCustomers.Width = this.ClientSize.Width - dgvCustomers.Left * 2;
+
+            // Tab control
+            tabHistory = new TabControl
+            {
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
+                Left = dgvCustomers.Left,
+                Top = dgvCustomers.Bottom + 10,
+                Width = dgvCustomers.Width,
+                Height = this.ClientSize.Height - dgvCustomers.Bottom - 20,
+                Font = new Font("Segoe UI", 9f)
+            };
+
+            // Tab 1 — Adoptions
+            var tabAdoptions = new TabPage("?? Adoptions");
+            dgvHistoryAdoptions = CreateHistoryGrid();
+            dgvHistoryAdoptions.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Animal", DataPropertyName = "AnimalName", FillWeight = 40 });
+            dgvHistoryAdoptions.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Date", DataPropertyName = "AdoptionDate", FillWeight = 30 });
+            dgvHistoryAdoptions.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Fee (LYD)", DataPropertyName = "FeePaid", FillWeight = 30 });
+            tabAdoptions.Controls.Add(dgvHistoryAdoptions);
+            tabHistory.TabPages.Add(tabAdoptions);
+
+            // Tab 2 — Purchases
+            var tabSales = new TabPage("?? Purchases");
+            dgvHistorySales = CreateHistoryGrid();
+            dgvHistorySales.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Date", DataPropertyName = "SaleDate", FillWeight = 40 });
+            dgvHistorySales.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total (LYD)", DataPropertyName = "TotalAmount", FillWeight = 60 });
+            tabSales.Controls.Add(dgvHistorySales);
+            tabHistory.TabPages.Add(tabSales);
+
+            // Tab 3 — Donations
+            var tabDonations = new TabPage("?? Donations");
+            dgvHistoryDonations = CreateHistoryGrid();
+            dgvHistoryDonations.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Date", DataPropertyName = "DonationDate", FillWeight = 35 });
+            dgvHistoryDonations.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Amount (LYD)", DataPropertyName = "Amount", FillWeight = 35 });
+            dgvHistoryDonations.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Category", DataPropertyName = "Category", FillWeight = 30 });
+            tabDonations.Controls.Add(dgvHistoryDonations);
+            tabHistory.TabPages.Add(tabDonations);
+
+            this.Controls.Add(tabHistory);
+            tabHistory.BringToFront();
+        }
+
+        private DataGridView CreateHistoryGrid()
+        {
+            var dgv = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                AutoGenerateColumns = false,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                AllowUserToAddRows = false,
+                RowHeadersVisible = false,
+                BackgroundColor = Color.White,
+                BorderStyle = BorderStyle.None,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                Font = new Font("Segoe UI", 9f),
+                RowTemplate = { Height = 36 },
+                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+                GridColor = Color.FromArgb(240, 240, 240),
+                EnableHeadersVisualStyles = false,
+            };
+
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = ColorPrimaryGreen;
+            dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            dgv.ColumnHeadersHeight = 36;
+            dgv.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+
+            return dgv;
+        }
+
+        private void DgvCustomers_SelectionChanged(object sender, EventArgs e)
+        {
+            if (tabHistory == null) return;
+
+            if (dgvCustomers.SelectedRows.Count == 0)
+            {
+                dgvHistoryAdoptions.DataSource = null;
+                dgvHistorySales.DataSource = null;
+                dgvHistoryDonations.DataSource = null;
+                return;
+            }
+
+            var bound = dgvCustomers.SelectedRows[0].DataBoundItem as Customer;
+            if (bound == null) return;
+
+            int cid = bound.ID;
+
+            // Adoptions
+            dgvHistoryAdoptions.DataSource = AdoptionForm.SharedAdoptions?
+                .Where(a => a.CustomerID == cid).ToList();
+
+            // Sales
+            dgvHistorySales.DataSource = SalesForm.SharedSales?
+                .Where(s => s.CustomerID == cid).ToList();
+
+            // Donations
+            dgvHistoryDonations.DataSource = DonationsForm.SharedDonations?
+                .Where(d => d.CustomerID == cid).ToList();
         }
 
         // -------------------- RefreshGrid --------------------
@@ -108,29 +184,21 @@ namespace AnimalsShalterProject
             IEnumerable<Customer> q = SharedCustomers;
 
             if (!string.IsNullOrWhiteSpace(search) && search != "Search customers...")
-            {
                 q = q.Where(c =>
-                    (c.Name  ?? "").IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (c.Name ?? "").IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
                     (c.Phone ?? "").IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0);
-            }
 
             bsCustomers.DataSource = q.ToList();
             dgvCustomers.Refresh();
         }
 
-        // -------------------- GetNextCustomerId --------------------
         private int GetNextCustomerId()
         {
             return SharedCustomers.Count == 0 ? 1 : SharedCustomers.Max(c => c.ID) + 1;
         }
 
-        // -------------------- Search --------------------
-        private void TxtSearch_TextChanged(object sender, EventArgs e)
-        {
-            RefreshGrid();
-        }
+        private void TxtSearch_TextChanged(object sender, EventArgs e) => RefreshGrid();
 
-        // -------------------- Add Customer --------------------
         private void BtnAddCustomer_Click(object sender, EventArgs e)
         {
             try
@@ -142,15 +210,14 @@ namespace AnimalsShalterProject
 
                     if (dlg.ShowDialog(this) == DialogResult.OK)
                     {
-                        var c = new Customer
+                        SharedCustomers.Add(new Customer
                         {
-                            ID       = GetNextCustomerId(),
-                            Name     = dlg.CustomerName,
-                            Phone    = dlg.CustomerPhone,
-                            Email    = dlg.CustomerEmail,
+                            ID = GetNextCustomerId(),
+                            Name = dlg.CustomerName,
+                            Phone = dlg.CustomerPhone,
+                            Email = dlg.CustomerEmail,
                             JoinDate = DateTime.Today
-                        };
-                        SharedCustomers.Add(c);
+                        });
                         RefreshGrid();
                         CustomersChanged?.Invoke(this, EventArgs.Empty);
                     }
@@ -162,7 +229,6 @@ namespace AnimalsShalterProject
             }
         }
 
-        // -------------------- Cell Click: Edit / Delete --------------------
         private void DgvCustomers_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
@@ -171,19 +237,16 @@ namespace AnimalsShalterProject
             if (col.Name != "ColActions") return;
 
             Rectangle cellRect = dgvCustomers.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false);
-            int relativeX = e.X - cellRect.X;
-            bool isEdit   = relativeX < cellRect.Width / 2;
+            bool isEdit = (e.X - cellRect.X) < cellRect.Width / 2;
 
             var bound = dgvCustomers.Rows[e.RowIndex].DataBoundItem as Customer;
             if (bound == null) return;
 
-            int id = bound.ID;
+            var customer = SharedCustomers.FirstOrDefault(c => c.ID == bound.ID);
+            if (customer == null) return;
 
             if (isEdit)
             {
-                var customer = SharedCustomers.FirstOrDefault(c => c.ID == id);
-                if (customer == null) return;
-
                 try
                 {
                     using (var dlg = new NewCustomerForm())
@@ -194,10 +257,9 @@ namespace AnimalsShalterProject
 
                         if (dlg.ShowDialog(this) == DialogResult.OK)
                         {
-                            customer.Name  = dlg.CustomerName;
+                            customer.Name = dlg.CustomerName;
                             customer.Phone = dlg.CustomerPhone;
                             customer.Email = dlg.CustomerEmail;
-
                             RefreshGrid();
                             CustomersChanged?.Invoke(this, EventArgs.Empty);
                         }
@@ -210,31 +272,20 @@ namespace AnimalsShalterProject
             }
             else
             {
-                var confirm = MessageBox.Show(
-                    "Are you sure you want to delete this customer?",
-                    "Confirm Delete",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
-
-                if (confirm != DialogResult.Yes) return;
-
-                var toRemove = SharedCustomers.FirstOrDefault(c => c.ID == id);
-                if (toRemove != null)
+                if (MessageBox.Show("Are you sure you want to delete this customer?", "Confirm Delete",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
                 {
-                    SharedCustomers.Remove(toRemove);
+                    SharedCustomers.Remove(customer);
                     RefreshGrid();
                     CustomersChanged?.Invoke(this, EventArgs.Empty);
                 }
             }
         }
 
-        // -------------------- Cell Painting (Actions column icons) --------------------
         private void DgvCustomers_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
-
-            var col = dgvCustomers.Columns[e.ColumnIndex];
-            if (col.Name != "ColActions") return;
+            if (dgvCustomers.Columns[e.ColumnIndex].Name != "ColActions") return;
 
             e.PaintBackground(e.CellBounds, true);
 
@@ -243,23 +294,17 @@ namespace AnimalsShalterProject
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // Left half: pencil/edit icon
             using (Pen pen = new Pen(ColorTextSecondary, 2f))
             {
-                Point p1 = new Point(centerX - 4, centerY + 4);
-                Point p2 = new Point(centerX + 4, centerY - 4);
-                e.Graphics.DrawLine(pen, p1, p2);
-
-                Point[] tip = {
-                    new Point(centerX - 6, centerY + 6),
-                    new Point(centerX - 4, centerY + 4),
-                    new Point(centerX - 6, centerY + 4)
-                };
+                e.Graphics.DrawLine(pen, new Point(centerX - 4, centerY + 4), new Point(centerX + 4, centerY - 4));
                 using (SolidBrush brush = new SolidBrush(ColorTextSecondary))
-                    e.Graphics.FillPolygon(brush, tip);
+                    e.Graphics.FillPolygon(brush, new Point[] {
+                        new Point(centerX - 6, centerY + 6),
+                        new Point(centerX - 4, centerY + 4),
+                        new Point(centerX - 6, centerY + 4)
+                    });
             }
 
-            // Right half: delete X icon
             int dx = centerX + 18;
             using (Pen redPen = new Pen(Color.FromArgb(211, 47, 47), 2f))
             {
@@ -270,7 +315,6 @@ namespace AnimalsShalterProject
             e.Handled = true;
         }
 
-        // -------------------- Paint helpers (copied from AnimalsForm) --------------------
         private void Panel_PaintRounded(object sender, PaintEventArgs e)
         {
             Control ctrl = sender as Control;
