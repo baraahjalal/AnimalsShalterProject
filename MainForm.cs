@@ -9,10 +9,8 @@ namespace AnimalsShalterProject
 {
     public partial class MainForm : Form
     {
-        // تتبع الزر النشط حالياً
         private Button _activeButton;
 
-        // Styling Constants
         private readonly Color ColorPrimaryGreen = ColorTranslator.FromHtml("#457357");
         private readonly Color ColorCardBackground = ColorTranslator.FromHtml("#FFFFFF");
         private readonly Color ColorFormBackground = ColorTranslator.FromHtml("#FAF8F5");
@@ -25,8 +23,6 @@ namespace AnimalsShalterProject
             SetupUI();
             ApplyRoundedCornersToCards();
             WireEvents();
-
-            // البدء بشاشة الداشبورد افتراضياً
             ShowDashboard();
         }
 
@@ -34,15 +30,12 @@ namespace AnimalsShalterProject
         {
             this.Text = "PawShelter Management System";
             this.WindowState = FormWindowState.Maximized;
-
-            // تحديث اسم المستخدم والتاريخ
             lblDate.Text = DateTime.Now.ToString("dddd, MMM dd, yyyy");
             lblWelcome.Text = $"Welcome, {Session.CurrentUser ?? "Admin"}";
         }
 
         private void WireEvents()
         {
-            // ربط الأزرار بالتبديل بين الشاشات
             btnDashboard.Click += (s, e) => { SetActiveButton(btnDashboard); ShowDashboard(); };
             btnAnimals.Click += (s, e) => { SetActiveButton(btnAnimals); SwitchView(new AnimalsForm()); };
             btnProducts.Click += (s, e) => { SetActiveButton(btnProducts); SwitchView(new ProductsForm()); };
@@ -92,6 +85,25 @@ namespace AnimalsShalterProject
             pnlMainContent.Controls.Clear();
             pnlMainContent.Controls.Add(tlpDashboard);
             pnlMainContent.Controls.Add(flpStats);
+
+            RefreshDashboardStats();
+        }
+
+        private void RefreshDashboardStats()
+        {
+            // Card 1 — Total Animals
+            lblStatValue1.Text = AnimalsForm.SharedAnimals?.Count.ToString() ?? "0";
+
+            // Card 2 — Adopted
+            lblStatValue2.Text = AnimalsForm.SharedAnimals?
+                .Count(a => a.Status == "Adopted").ToString() ?? "0";
+
+            // Card 3 — Products
+            lblStatValue3.Text = ProductsForm.SharedProducts?.Count.ToString() ?? "0";
+
+            // Card 4 — Total Sales
+            decimal totalSales = SalesForm.SharedSales?.Sum(s => s.TotalAmount) ?? 0;
+            lblStatValue4.Text = totalSales.ToString("F2") + " LYD";
         }
 
         private void SetActiveButton(Button btn)
@@ -108,7 +120,6 @@ namespace AnimalsShalterProject
 
         private void pnlHeader_Paint(object sender, PaintEventArgs e)
         {
-
         }
 
         private void ApplyRoundedCornersToCards()
