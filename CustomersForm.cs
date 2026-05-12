@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -17,11 +17,11 @@ namespace AnimalsShalterProject
         private readonly Color ColorTextPrimary = ColorTranslator.FromHtml("#2A332E");
         private readonly Color ColorTextSecondary = ColorTranslator.FromHtml("#8A938D");
 
-        // --- Task H: History Panel Controls ---
         private TabControl tabHistory;
         private DataGridView dgvHistoryAdoptions;
         private DataGridView dgvHistorySales;
         private DataGridView dgvHistoryDonations;
+        private Label lblNoSelection;
 
         public CustomersForm()
         {
@@ -68,17 +68,32 @@ namespace AnimalsShalterProject
             dgvCustomers.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         }
 
-        // -------------------- Task H: Setup History Panel --------------------
         private void SetupHistoryPanel()
         {
-            // shrink the main grid to top half
+            // تصغير الجدول للنصف العلوي
             dgvCustomers.Dock = DockStyle.None;
             dgvCustomers.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             dgvCustomers.Height = this.ClientSize.Height / 2 - 60;
-            dgvCustomers.Top = dgvCustomers.Top;
             dgvCustomers.Width = this.ClientSize.Width - dgvCustomers.Left * 2;
 
-            // Tab control
+            // label "اختر زبون" يظهر في البداية
+            lblNoSelection = new Label
+            {
+                Text = "👆 Select a customer to view their history",
+                Font = new Font("Segoe UI", 11f),
+                ForeColor = ColorTextSecondary,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
+                Left = dgvCustomers.Left,
+                Top = dgvCustomers.Bottom + 10,
+                Width = dgvCustomers.Width,
+                Height = this.ClientSize.Height - dgvCustomers.Bottom - 20,
+                Visible = true
+            };
+            this.Controls.Add(lblNoSelection);
+            lblNoSelection.BringToFront();
+
+            // TabControl مخفي في البداية
             tabHistory = new TabControl
             {
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
@@ -86,11 +101,12 @@ namespace AnimalsShalterProject
                 Top = dgvCustomers.Bottom + 10,
                 Width = dgvCustomers.Width,
                 Height = this.ClientSize.Height - dgvCustomers.Bottom - 20,
-                Font = new Font("Segoe UI", 9f)
+                Font = new Font("Segoe UI", 9f),
+                Visible = false  // ← مخفي في البداية
             };
 
-            // Tab 1 � Adoptions
-            var tabAdoptions = new TabPage("?? Adoptions");
+            // Tab 1 — Adoptions
+            var tabAdoptions = new TabPage("🐾 Adoptions");
             dgvHistoryAdoptions = CreateHistoryGrid();
             dgvHistoryAdoptions.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Animal", DataPropertyName = "AnimalName", FillWeight = 40 });
             dgvHistoryAdoptions.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Date", DataPropertyName = "AdoptionDate", FillWeight = 30 });
@@ -98,16 +114,16 @@ namespace AnimalsShalterProject
             tabAdoptions.Controls.Add(dgvHistoryAdoptions);
             tabHistory.TabPages.Add(tabAdoptions);
 
-            // Tab 2 � Purchases
-            var tabSales = new TabPage("?? Purchases");
+            // Tab 2 — Purchases
+            var tabSales = new TabPage("🛒 Purchases");
             dgvHistorySales = CreateHistoryGrid();
             dgvHistorySales.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Date", DataPropertyName = "SaleDate", FillWeight = 40 });
             dgvHistorySales.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total (LYD)", DataPropertyName = "TotalAmount", FillWeight = 60 });
             tabSales.Controls.Add(dgvHistorySales);
             tabHistory.TabPages.Add(tabSales);
 
-            // Tab 3 � Donations
-            var tabDonations = new TabPage("?? Donations");
+            // Tab 3 — Donations
+            var tabDonations = new TabPage("💚 Donations");
             dgvHistoryDonations = CreateHistoryGrid();
             dgvHistoryDonations.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Date", DataPropertyName = "DonationDate", FillWeight = 35 });
             dgvHistoryDonations.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Amount (LYD)", DataPropertyName = "Amount", FillWeight = 35 });
@@ -153,9 +169,9 @@ namespace AnimalsShalterProject
 
             if (dgvCustomers.SelectedRows.Count == 0)
             {
-                dgvHistoryAdoptions.DataSource = null;
-                dgvHistorySales.DataSource = null;
-                dgvHistoryDonations.DataSource = null;
+                // أخفي الـ tabs وأظهر رسالة الاختيار
+                tabHistory.Visible = false;
+                lblNoSelection.Visible = true;
                 return;
             }
 
@@ -164,20 +180,20 @@ namespace AnimalsShalterProject
 
             int cid = bound.ID;
 
-            // Adoptions
+            // أظهر الـ tabs وأخفي رسالة الاختيار
+            lblNoSelection.Visible = false;
+            tabHistory.Visible = true;
+
             dgvHistoryAdoptions.DataSource = AdoptionForm.SharedAdoptions?
                 .Where(a => a.CustomerID == cid).ToList();
 
-            // Sales
             dgvHistorySales.DataSource = SalesForm.SharedSales?
                 .Where(s => s.CustomerID == cid).ToList();
 
-            // Donations
             dgvHistoryDonations.DataSource = DonationsForm.SharedDonations?
                 .Where(d => d.CustomerID == cid).ToList();
         }
 
-        // -------------------- RefreshGrid --------------------
         private void RefreshGrid()
         {
             string search = txtSearch.Text?.Trim();
@@ -232,9 +248,7 @@ namespace AnimalsShalterProject
         private void DgvCustomers_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
-
-            var col = dgvCustomers.Columns[e.ColumnIndex];
-            if (col.Name != "ColActions") return;
+            if (dgvCustomers.Columns[e.ColumnIndex].Name != "ColActions") return;
 
             Rectangle cellRect = dgvCustomers.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false);
             bool isEdit = (e.X - cellRect.X) < cellRect.Width / 2;
@@ -319,10 +333,8 @@ namespace AnimalsShalterProject
         {
             Control ctrl = sender as Control;
             if (ctrl == null) return;
-
             int radius = 16;
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-
             using (GraphicsPath path = new GraphicsPath())
             {
                 path.AddArc(0, 0, radius * 2, radius * 2, 180, 90);
