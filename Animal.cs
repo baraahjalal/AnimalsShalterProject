@@ -1,6 +1,7 @@
+using System;
+
 namespace AnimalsShalterProject
 {
-    // Simple in-memory data model
     public class Animal
     {
         public int ID { get; set; }
@@ -9,5 +10,6 @@ namespace AnimalsShalterProject
         public string Age { get; set; }
         public string HealthStatus { get; set; }
         public string Status { get; set; }
+        public DateTime? VaccineDate { get; set; }
     }
 }

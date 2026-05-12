@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace AnimalsShalterProject
@@ -23,7 +25,7 @@ namespace AnimalsShalterProject
             SetupUI();
             ApplyRoundedCornersToCards();
             WireEvents();
-            
+
             // البدء بشاشة الداشبورد افتراضياً
             ShowDashboard();
         }
@@ -32,7 +34,7 @@ namespace AnimalsShalterProject
         {
             this.Text = "PawShelter Management System";
             this.WindowState = FormWindowState.Maximized;
-            
+
             // تحديث اسم المستخدم والتاريخ
             lblDate.Text = DateTime.Now.ToString("dddd, MMM dd, yyyy");
             lblWelcome.Text = $"Welcome, {Session.CurrentUser ?? "Admin"}";
@@ -41,26 +43,19 @@ namespace AnimalsShalterProject
         private void WireEvents()
         {
             // ربط الأزرار بالتبديل بين الشاشات
-            btnDashboard.Click  += (s, e) => { SetActiveButton(btnDashboard);  ShowDashboard(); };
-            btnAnimals.Click    += (s, e) => { SetActiveButton(btnAnimals);    SwitchView(new AnimalsForm()); };
-            btnProducts.Click   += (s, e) => { SetActiveButton(btnProducts);   SwitchView(new ProductsForm()); };
-            btnSales.Click      += (s, e) => { SetActiveButton(btnSales);      SwitchView(new SalesForm()); };
-            btnAdoptions.Click  += (s, e) => { SetActiveButton(btnAdoptions);  SwitchView(new AdoptionForm()); };
-            btnDonations.Click  += (s, e) => { SetActiveButton(btnDonations);  SwitchView(new DonationsForm()); };
-            btnCustomers.Click  += (s, e) => { SetActiveButton(btnCustomers);  SwitchView(new CustomersForm()); };
+            btnDashboard.Click += (s, e) => { SetActiveButton(btnDashboard); ShowDashboard(); };
+            btnAnimals.Click += (s, e) => { SetActiveButton(btnAnimals); SwitchView(new AnimalsForm()); };
+            btnProducts.Click += (s, e) => { SetActiveButton(btnProducts); SwitchView(new ProductsForm()); };
+            btnSales.Click += (s, e) => { SetActiveButton(btnSales); SwitchView(new SalesForm()); };
+            btnAdoptions.Click += (s, e) => { SetActiveButton(btnAdoptions); SwitchView(new AdoptionForm()); };
+            btnDonations.Click += (s, e) => { SetActiveButton(btnDonations); SwitchView(new DonationsForm()); };
+            btnCustomers.Click += (s, e) => { SetActiveButton(btnCustomers); SwitchView(new CustomersForm()); };
         }
 
-        // -------------------------------------------------------
-        // المهمة 1: منطق تبديل الشاشات (Navigation Logic)
-        // -------------------------------------------------------
-        
-        /// <summary>
-        /// تبديل المحتوى الرئيسي في pnlMainContent
-        /// </summary>
         public void SwitchView(Control view)
         {
             pnlMainContent.Controls.Clear();
-            
+
             if (view is Form form)
             {
                 form.TopLevel = false;
@@ -78,20 +73,35 @@ namespace AnimalsShalterProject
 
         private void ShowDashboard()
         {
+            // تذكير التطعيم
+            if (AnimalsForm.SharedAnimals != null)
+            {
+                var upcoming = AnimalsForm.SharedAnimals
+                    .Where(a => a.VaccineDate.HasValue
+                        && a.VaccineDate.Value.Date >= DateTime.Today
+                        && a.VaccineDate.Value.Date <= DateTime.Today.AddDays(7))
+                    .Select(a => a.Name)
+                    .ToList();
+
+                if (upcoming.Any())
+                    MessageBox.Show(
+                        "مواعيد تطعيم قادمة خلال 7 أيام:\n" + string.Join("\n", upcoming),
+                        "تذكير التطعيم");
+            }
+
             pnlMainContent.Controls.Clear();
             pnlMainContent.Controls.Add(tlpDashboard);
             pnlMainContent.Controls.Add(flpStats);
-            // PopulateDashboard logic here...
         }
 
         private void SetActiveButton(Button btn)
         {
             if (_activeButton != null)
             {
-                _activeButton.BackColor = Color.FromArgb(69, 115, 87); // اللون الأصلي
+                _activeButton.BackColor = Color.FromArgb(69, 115, 87);
                 _activeButton.Font = new Font("Segoe UI Semibold", 10F);
             }
-            btn.BackColor = Color.FromArgb(86, 138, 106); // لون التمييز
+            btn.BackColor = Color.FromArgb(86, 138, 106);
             btn.Font = new Font("Segoe UI Bold", 10F);
             _activeButton = btn;
         }
@@ -101,11 +111,6 @@ namespace AnimalsShalterProject
 
         }
 
-        // ==================== ROUNDED CORNERS HELPER ====================
-        /// <summary>
-        /// Applies rounded corners to panels using GraphicsPath and Region.
-        /// Call this method in the constructor after InitializeComponent().
-        /// </summary>
         private void ApplyRoundedCornersToCards()
         {
             ApplyRoundedCorners(pnlStatCard1, 12);
@@ -116,18 +121,12 @@ namespace AnimalsShalterProject
             ApplyRoundedCorners(pnlAlerts, 12);
         }
 
-        /// <summary>
-        /// Creates and applies a rounded rectangular region to a control.
-        /// </summary>
-        /// <param name="control">The control to apply rounded corners to.</param>
-        /// <param name="cornerRadius">The radius of the corners in pixels.</param>
         private void ApplyRoundedCorners(Control control, int cornerRadius)
         {
             if (control == null) return;
 
             using (GraphicsPath path = new GraphicsPath())
             {
-                // Add four arcs for rounded corners
                 path.AddArc(0, 0, cornerRadius * 2, cornerRadius * 2, 180, 90);
                 path.AddArc(control.Width - (cornerRadius * 2), 0, cornerRadius * 2, cornerRadius * 2, 270, 90);
                 path.AddArc(control.Width - (cornerRadius * 2), control.Height - (cornerRadius * 2), cornerRadius * 2, cornerRadius * 2, 0, 90);
@@ -138,11 +137,6 @@ namespace AnimalsShalterProject
             }
         }
 
-        // ==================== STAT CARD PAINT HANDLER ====================
-        /// <summary>
-        /// Paint handler for stat cards to draw subtle rounded corners and shadows.
-        /// Attach this to the Paint event of each stat card panel.
-        /// </summary>
         private void StatCard_Paint(object sender, PaintEventArgs e)
         {
             Panel card = sender as Panel;
@@ -150,7 +144,6 @@ namespace AnimalsShalterProject
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // Draw a subtle shadow (1px border at bottom and right)
             using (Pen shadowPen = new Pen(Color.FromArgb(240, 240, 240), 1))
             {
                 e.Graphics.DrawLine(shadowPen, card.Width - 1, 0, card.Width - 1, card.Height - 1);
@@ -159,4 +152,3 @@ namespace AnimalsShalterProject
         }
     }
 }
-
