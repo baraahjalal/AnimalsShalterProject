@@ -22,6 +22,7 @@ namespace AnimalsShalterProject
         private DataGridView dgvHistorySales;
         private DataGridView dgvHistoryDonations;
         private Label lblNoSelection;
+        private bool _historyPanelSetup = false;
 
         public CustomersForm()
         {
@@ -40,16 +41,25 @@ namespace AnimalsShalterProject
         {
             if (SharedCustomers.Count == 0)
             {
-                SharedCustomers.Add(new Customer { ID = 1, Name = "Ahmed Ali", Phone = "091-234-5678", Email = "ahmed.ali@email.com", JoinDate = new DateTime(2022, 3, 15) });
-                SharedCustomers.Add(new Customer { ID = 2, Name = "Sara Mohamed", Phone = "092-876-5432", Email = "sara.m@email.com", JoinDate = new DateTime(2023, 1, 8) });
-                SharedCustomers.Add(new Customer { ID = 3, Name = "Khalid Omar", Phone = "091-998-1122", Email = "khalid.omar@email.com", JoinDate = new DateTime(2021, 11, 20) });
-                SharedCustomers.Add(new Customer { ID = 4, Name = "Fatima Hassan", Phone = "093-445-6677", Email = "fatima.h@email.com", JoinDate = new DateTime(2023, 6, 1) });
-                SharedCustomers.Add(new Customer { ID = 5, Name = "Yusuf Ibrahim", Phone = "091-332-9988", Email = "yusuf.ibrahim@email.com", JoinDate = new DateTime(2022, 9, 14) });
+                SharedCustomers.Add(new Customer { ID = 1, Name = "Ahmed Ali", Phone = "091-234-5678", Email = "", JoinDate = new DateTime(2022, 3, 15) });
+                SharedCustomers.Add(new Customer { ID = 2, Name = "Sara Mohamed", Phone = "092-876-5432", Email = "", JoinDate = new DateTime(2023, 1, 8) });
+                SharedCustomers.Add(new Customer { ID = 3, Name = "Khalid Omar", Phone = "091-998-1122", Email = "", JoinDate = new DateTime(2021, 11, 20) });
+                SharedCustomers.Add(new Customer { ID = 4, Name = "Fatima Hassan", Phone = "093-445-6677", Email = "", JoinDate = new DateTime(2023, 6, 1) });
+                SharedCustomers.Add(new Customer { ID = 5, Name = "Yusuf Ibrahim", Phone = "091-332-9988", Email = "", JoinDate = new DateTime(2022, 9, 14) });
             }
 
             SetupGrid();
             RefreshGrid();
-            SetupHistoryPanel();
+
+            // نؤجل SetupHistoryPanel لما الـ form يكون فعلاً rendered
+            this.Shown += (ss, ee) =>
+            {
+                if (!_historyPanelSetup)
+                {
+                    _historyPanelSetup = true;
+                    SetupHistoryPanel();
+                }
+            };
         }
 
         private void SetupGrid()
@@ -57,10 +67,10 @@ namespace AnimalsShalterProject
             dgvCustomers.AutoGenerateColumns = false;
             dgvCustomers.Columns.Clear();
 
+            // بدون عمود Email
             dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColId", HeaderText = "ID", DataPropertyName = "ID", Visible = false });
             dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColName", HeaderText = "Customer Name", DataPropertyName = "Name" });
             dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColPhone", HeaderText = "Phone", DataPropertyName = "Phone" });
-            dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColEmail", HeaderText = "Email", DataPropertyName = "Email" });
             dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColJoinDate", HeaderText = "Join Date", DataPropertyName = "JoinDate" });
             dgvCustomers.Columns.Add(new DataGridViewTextBoxColumn { Name = "ColActions", HeaderText = "Actions" });
 
@@ -76,33 +86,36 @@ namespace AnimalsShalterProject
             dgvCustomers.Height = this.ClientSize.Height / 2 - 60;
             dgvCustomers.Width = this.ClientSize.Width - dgvCustomers.Left * 2;
 
-            // label "اختر زبون" يظهر في البداية
+            int panelTop = dgvCustomers.Bottom + 10;
+            int panelHeight = this.ClientSize.Height - panelTop - 10;
+
+            // label "اختر زبون" — يظهر في البداية
             lblNoSelection = new Label
             {
                 Text = "👆 Select a customer to view their history",
                 Font = new Font("Segoe UI", 11f),
                 ForeColor = ColorTextSecondary,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 Left = dgvCustomers.Left,
-                Top = dgvCustomers.Bottom + 10,
+                Top = panelTop,
                 Width = dgvCustomers.Width,
-                Height = this.ClientSize.Height - dgvCustomers.Bottom - 20,
+                Height = panelHeight,
                 Visible = true
             };
             this.Controls.Add(lblNoSelection);
             lblNoSelection.BringToFront();
 
-            // TabControl مخفي في البداية
+            // TabControl — مخفي في البداية
             tabHistory = new TabControl
             {
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 Left = dgvCustomers.Left,
-                Top = dgvCustomers.Bottom + 10,
+                Top = panelTop,
                 Width = dgvCustomers.Width,
-                Height = this.ClientSize.Height - dgvCustomers.Bottom - 20,
+                Height = panelHeight,
                 Font = new Font("Segoe UI", 9f),
-                Visible = false  // ← مخفي في البداية
+                Visible = false
             };
 
             // Tab 1 — Adoptions
@@ -165,11 +178,10 @@ namespace AnimalsShalterProject
 
         private void DgvCustomers_SelectionChanged(object sender, EventArgs e)
         {
-            if (tabHistory == null) return;
+            if (tabHistory == null || lblNoSelection == null) return;
 
             if (dgvCustomers.SelectedRows.Count == 0)
             {
-                // أخفي الـ tabs وأظهر رسالة الاختيار
                 tabHistory.Visible = false;
                 lblNoSelection.Visible = true;
                 return;
@@ -180,7 +192,6 @@ namespace AnimalsShalterProject
 
             int cid = bound.ID;
 
-            // أظهر الـ tabs وأخفي رسالة الاختيار
             lblNoSelection.Visible = false;
             tabHistory.Visible = true;
 
@@ -231,8 +242,8 @@ namespace AnimalsShalterProject
                             ID = GetNextCustomerId(),
                             Name = dlg.CustomerName,
                             Phone = dlg.CustomerPhone,
-                            Email = dlg.CustomerEmail,
-                            JoinDate = DateTime.Today
+                            Email = "",
+                            JoinDate = dlg.CustomerJoinDate
                         });
                         RefreshGrid();
                         CustomersChanged?.Invoke(this, EventArgs.Empty);
@@ -273,7 +284,6 @@ namespace AnimalsShalterProject
                         {
                             customer.Name = dlg.CustomerName;
                             customer.Phone = dlg.CustomerPhone;
-                            customer.Email = dlg.CustomerEmail;
                             RefreshGrid();
                             CustomersChanged?.Invoke(this, EventArgs.Empty);
                         }

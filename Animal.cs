@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace AnimalsShalterProject
 {
@@ -11,5 +11,9 @@ namespace AnimalsShalterProject
         public string HealthStatus { get; set; }
         public string Status { get; set; }
         public DateTime? VaccineDate { get; set; }
+
+        // خطوة 1 — حقول التطعيم الجديدة
+        public bool IsVaccinated { get; set; }
+        public DateTime? LastVaccineDate { get; set; }
     }
 }

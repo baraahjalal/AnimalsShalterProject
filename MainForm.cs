@@ -10,6 +10,7 @@ namespace AnimalsShalterProject
     public partial class MainForm : Form
     {
         private Button _activeButton;
+        private Panel pnlVaccineAlerts;
 
         private readonly Color ColorPrimaryGreen = ColorTranslator.FromHtml("#457357");
         private readonly Color ColorCardBackground = ColorTranslator.FromHtml("#FFFFFF");
@@ -33,15 +34,19 @@ namespace AnimalsShalterProject
             this.WindowState = FormWindowState.Maximized;
             lblDate.Text = DateTime.Now.ToString("dddd, MMM dd, yyyy");
             lblWelcome.Text = $"Welcome, {Session.CurrentUser ?? "Admin"}";
+
+            btnAddNewEntry.Text = "⏻  Logout";
+            btnAddNewEntry.ForeColor = Color.FromArgb(198, 40, 40);
+            btnAddNewEntry.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
         }
 
         private void EnsureDataLoaded()
         {
             if (AnimalsForm.SharedAnimals.Count == 0)
             {
-                AnimalsForm.SharedAnimals.Add(new Animal { ID = 1, Name = "Buddy", Type = "Dog", Age = "3 Years", HealthStatus = "Vaccinated", Status = "Available" });
-                AnimalsForm.SharedAnimals.Add(new Animal { ID = 2, Name = "Mittens", Type = "Cat", Age = "2 Years", HealthStatus = "Needs Vaccine", Status = "Sick" });
-                AnimalsForm.SharedAnimals.Add(new Animal { ID = 3, Name = "Rex", Type = "Dog", Age = "5 Years", HealthStatus = "Vaccinated", Status = "Adopted" });
+                AnimalsForm.SharedAnimals.Add(new Animal { ID = 1, Name = "Buddy", Type = "Dog", Age = "3 Years", HealthStatus = "Vaccinated", Status = "Available", IsVaccinated = true, LastVaccineDate = DateTime.Today.AddDays(-20), VaccineDate = DateTime.Today.AddDays(10) });
+                AnimalsForm.SharedAnimals.Add(new Animal { ID = 2, Name = "Mittens", Type = "Cat", Age = "2 Years", HealthStatus = "Needs Vaccine", Status = "Sick", IsVaccinated = false, LastVaccineDate = DateTime.Today, VaccineDate = DateTime.Today.AddMonths(1) });
+                AnimalsForm.SharedAnimals.Add(new Animal { ID = 3, Name = "Rex", Type = "Dog", Age = "5 Years", HealthStatus = "Vaccinated", Status = "Adopted", IsVaccinated = true, LastVaccineDate = DateTime.Today.AddDays(-35), VaccineDate = DateTime.Today.AddDays(-5) });
                 AnimalsForm.SharedAnimals.Add(new Animal { ID = 4, Name = "Tweety", Type = "Bird", Age = "1 Year", HealthStatus = "Vaccinated", Status = "Available" });
             }
 
@@ -56,10 +61,10 @@ namespace AnimalsShalterProject
 
             if (CustomersForm.SharedCustomers.Count == 0)
             {
-                CustomersForm.SharedCustomers.Add(new Customer { ID = 1, Name = "Ahmed Ali", Phone = "091-234-5678", Email = "ahmed.ali@email.com", JoinDate = new DateTime(2022, 3, 15) });
-                CustomersForm.SharedCustomers.Add(new Customer { ID = 2, Name = "Sara Mohamed", Phone = "092-876-5432", Email = "sara.m@email.com", JoinDate = new DateTime(2023, 1, 8) });
-                CustomersForm.SharedCustomers.Add(new Customer { ID = 3, Name = "Khalid Omar", Phone = "091-998-1122", Email = "khalid.omar@email.com", JoinDate = new DateTime(2021, 11, 20) });
-                CustomersForm.SharedCustomers.Add(new Customer { ID = 4, Name = "Fatima Hassan", Phone = "093-445-6677", Email = "fatima.h@email.com", JoinDate = new DateTime(2023, 6, 1) });
+                CustomersForm.SharedCustomers.Add(new Customer { ID = 1, Name = "Ahmed Ali", Phone = "091-234-5678", Email = "", JoinDate = new DateTime(2022, 3, 15) });
+                CustomersForm.SharedCustomers.Add(new Customer { ID = 2, Name = "Sara Mohamed", Phone = "092-876-5432", Email = "", JoinDate = new DateTime(2023, 1, 8) });
+                CustomersForm.SharedCustomers.Add(new Customer { ID = 3, Name = "Khalid Omar", Phone = "091-998-1122", Email = "", JoinDate = new DateTime(2021, 11, 20) });
+                CustomersForm.SharedCustomers.Add(new Customer { ID = 4, Name = "Fatima Hassan", Phone = "093-445-6677", Email = "", JoinDate = new DateTime(2023, 6, 1) });
             }
 
             if (AdoptionForm.SharedAdoptions.Count == 0)
@@ -77,6 +82,23 @@ namespace AnimalsShalterProject
             btnAdoptions.Click += (s, e) => { SetActiveButton(btnAdoptions); SwitchView(new AdoptionForm()); };
             btnDonations.Click += (s, e) => { SetActiveButton(btnDonations); SwitchView(new DonationsForm()); };
             btnCustomers.Click += (s, e) => { SetActiveButton(btnCustomers); SwitchView(new CustomersForm()); };
+
+            btnAddNewEntry.Click += (s, e) =>
+            {
+                var confirm = MessageBox.Show(
+                    "Are you sure you want to logout?",
+                    "Logout",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (confirm == DialogResult.Yes)
+                {
+                    Session.CurrentUser = null;
+                    var loginForm = new LoginForm();
+                    loginForm.Show();
+                    this.Close();
+                }
+            };
         }
 
         public void SwitchView(Control view)
@@ -99,30 +121,125 @@ namespace AnimalsShalterProject
 
         private void ShowDashboard()
         {
-            if (AnimalsForm.SharedAnimals != null)
-            {
-                var upcoming = AnimalsForm.SharedAnimals
-                    .Where(a => a.VaccineDate.HasValue
-                        && a.VaccineDate.Value.Date >= DateTime.Today
-                        && a.VaccineDate.Value.Date <= DateTime.Today.AddDays(7))
-                    .Select(a => a.Name)
-                    .ToList();
-
-                if (upcoming.Any())
-                    MessageBox.Show(
-                        "مواعيد تطعيم قادمة خلال 7 أيام:\n" + string.Join("\n", upcoming),
-                        "تذكير التطعيم");
-            }
-
             pnlMainContent.Controls.Clear();
             pnlMainContent.Controls.Add(tlpDashboard);
             pnlMainContent.Controls.Add(flpStats);
 
+            // Vaccine alerts panel — نبنيه برمجياً فوق tlpDashboard
+            BuildVaccineAlertsPanel();
+
             RefreshDashboardStats();
             RefreshRecentAdoptions();
             RefreshLowStockAlerts();
+            RefreshVaccineAlerts();
         }
 
+        // -------------------- Vaccine Alerts Panel --------------------
+        private void BuildVaccineAlertsPanel()
+        {
+            // نحذف القديم لو موجود
+            if (pnlVaccineAlerts != null && pnlMainContent.Controls.Contains(pnlVaccineAlerts))
+                pnlMainContent.Controls.Remove(pnlVaccineAlerts);
+
+            pnlVaccineAlerts = new Panel
+            {
+                BackColor = Color.FromArgb(255, 235, 238),
+                Height = 0, // نخليه صفر في البداية، يكبر لما يكون فيه بيانات
+                Dock = DockStyle.Top,
+                Padding = new Padding(16, 10, 16, 10),
+            };
+
+            pnlMainContent.Controls.Add(pnlVaccineAlerts);
+            pnlVaccineAlerts.BringToFront();
+        }
+
+        private void RefreshVaccineAlerts()
+        {
+            if (pnlVaccineAlerts == null) return;
+            pnlVaccineAlerts.Controls.Clear();
+
+            // نجيب كلاب وقطط فقط عندهم VaccineDate
+            var alerts = AnimalsForm.SharedAnimals?
+                .Where(a => (a.Type == "Dog" || a.Type == "Cat") && a.VaccineDate.HasValue)
+                .Select(a => new
+                {
+                    a.Name,
+                    a.Type,
+                    NextVaccine = a.VaccineDate.Value.Date,
+                    DaysLeft = (a.VaccineDate.Value.Date - DateTime.Today).Days,
+                    IsVaccinated = a.IsVaccinated
+                })
+                .OrderBy(a => a.DaysLeft)
+                .ToList();
+
+            // نعرض بس اللي موعدهم خلال 14 يوم أو فات
+            var toShow = alerts?.Where(a => a.DaysLeft <= 14).ToList();
+
+            if (toShow == null || toShow.Count == 0)
+            {
+                pnlVaccineAlerts.Height = 0;
+                pnlVaccineAlerts.Visible = false;
+                return;
+            }
+
+            pnlVaccineAlerts.Visible = true;
+
+            int top = 10;
+
+            // عنوان
+            var lblTitle = new Label
+            {
+                Text = "🔴  Vaccine Reminders",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(183, 28, 28),
+                Left = 16,
+                Top = top,
+                AutoSize = true,
+            };
+            pnlVaccineAlerts.Controls.Add(lblTitle);
+            top += 28;
+
+            foreach (var a in toShow)
+            {
+                string icon = a.DaysLeft < 0 ? "⛔" : a.DaysLeft == 0 ? "🔔" : "⚠️";
+                string dayText = a.DaysLeft < 0
+                    ? $"Overdue by {-a.DaysLeft} days"
+                    : a.DaysLeft == 0
+                        ? "Due TODAY"
+                        : $"{a.DaysLeft} days left";
+
+                string vaccineStatus = a.IsVaccinated ? "Last vaccinated" : "Not yet vaccinated";
+
+                var row = new Panel
+                {
+                    Left = 16,
+                    Top = top,
+                    Width = pnlVaccineAlerts.Width - 40,
+                    Height = 36,
+                    BackColor = Color.Transparent,
+                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                };
+
+                var lblRow = new Label
+                {
+                    Text = $"{icon}  {a.Name} ({a.Type})  —  Next vaccine: {a.NextVaccine:MMM dd, yyyy}  •  {dayText}  •  {vaccineStatus}",
+                    Font = new Font("Segoe UI", 9F),
+                    ForeColor = a.DaysLeft < 0
+                        ? Color.FromArgb(183, 28, 28)
+                        : Color.FromArgb(109, 0, 26),
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                };
+
+                row.Controls.Add(lblRow);
+                pnlVaccineAlerts.Controls.Add(row);
+                top += 40;
+            }
+
+            pnlVaccineAlerts.Height = top + 10;
+        }
+
+        // -------------------- Dashboard Stats --------------------
         private void RefreshDashboardStats()
         {
             lblStatValue1.Text = AnimalsForm.SharedAnimals?.Count.ToString() ?? "0";
@@ -136,7 +253,6 @@ namespace AnimalsShalterProject
         {
             dgvRecentAdoptions.Rows.Clear();
 
-            // يعرض بس الحيوانات المتبناة — يتطابق مع رقم Adopted فوق
             var adoptedAnimals = AnimalsForm.SharedAnimals?
                 .Where(a => string.Equals(a.Status, "Adopted", StringComparison.OrdinalIgnoreCase))
                 .ToList();
